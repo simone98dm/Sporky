@@ -8,6 +8,11 @@ export interface TrackDTO {
   next: string;
 }
 
+// Chart movement vs the baseline range: places climbed (negative = dropped),
+// 'new' (absent from the baseline chart) or 'fading' (12-month tracks missing
+// from the last 4 weeks).
+export type Movement = number | 'new' | 'fading';
+
 export interface Track {
   id: string;
   name: string;

@@ -14,6 +14,7 @@
           class="group flex items-center gap-unit text-on-surface-variant transition-colors hover:text-primary"
         >
           <span
+            aria-hidden="true"
             class="material-symbols-outlined text-2xl transition-transform group-hover:-translate-x-1"
             >arrow_back</span
           >
@@ -50,6 +51,7 @@
                 @click="player.toggle(track)"
               >
                 <span
+                  aria-hidden="true"
                   class="material-symbols-outlined fill text-3xl text-on-primary-container"
                   >{{ isPlaying ? 'pause' : 'play_arrow' }}</span
                 >
@@ -87,7 +89,9 @@
           <div
             class="glass-panel flex min-h-[300px] flex-1 flex-col items-center justify-center gap-4 rounded-xl p-container-padding text-center"
           >
-            <span class="material-symbols-outlined text-5xl text-primary"
+            <span
+              aria-hidden="true"
+              class="material-symbols-outlined text-5xl text-primary"
               >headphones</span
             >
             <p class="max-w-sm text-body-lg text-on-surface-variant">
@@ -128,9 +132,11 @@
                 class="flex items-center justify-between text-on-surface-variant"
               >
                 <span class="text-body-sm">{{ stat.label }}</span>
-                <span class="material-symbols-outlined text-sm">{{
-                  stat.icon
-                }}</span>
+                <span
+                  aria-hidden="true"
+                  class="material-symbols-outlined text-sm"
+                  >{{ stat.icon }}</span
+                >
               </div>
               <div class="text-headline-md text-on-surface">
                 {{ stat.value }}
@@ -154,6 +160,7 @@
         class="flex flex-1 flex-col items-center justify-center text-center"
       >
         <span
+          aria-hidden="true"
           class="material-symbols-outlined mb-4 text-5xl text-on-surface-variant"
           >music_off</span
         >
@@ -163,64 +170,6 @@
         >
       </div>
     </main>
-
-    <!-- Bottom player bar -->
-    <div
-      v-if="track"
-      class="glass-panel fixed bottom-0 left-0 z-50 flex h-24 w-full items-center justify-between border-t border-white/5 px-container-padding lg:px-section-margin"
-    >
-      <div class="flex flex-1 items-center gap-4">
-        <span class="w-12 text-right text-body-sm text-on-surface-variant">{{
-          formatTime(currentTime)
-        }}</span>
-        <button
-          type="button"
-          class="relative h-1.5 flex-1 cursor-pointer rounded-full bg-surface-container-high"
-          aria-label="Seek"
-          @click="onSeek"
-        >
-          <div
-            class="absolute left-0 top-0 h-full rounded-full bg-primary"
-            :style="{ width: `${progressPct}%` }"
-          ></div>
-        </button>
-        <span class="w-12 text-body-sm text-on-surface-variant">{{
-          formatTime(duration)
-        }}</span>
-      </div>
-      <div class="ml-8 flex items-center gap-6">
-        <button
-          type="button"
-          class="text-on-surface-variant transition-colors hover:text-on-surface disabled:opacity-30"
-          :disabled="!prevId"
-          aria-label="Previous track"
-          @click="goTo(prevId)"
-        >
-          <span class="material-symbols-outlined text-2xl">skip_previous</span>
-        </button>
-        <button
-          type="button"
-          class="flex h-12 w-12 items-center justify-center rounded-full bg-on-surface shadow-lg transition-transform hover:scale-105 disabled:opacity-30"
-          :disabled="!track.preview"
-          :aria-label="isPlaying ? 'Pause' : 'Play'"
-          @click="player.toggle(track)"
-        >
-          <span
-            class="material-symbols-outlined fill text-3xl text-surface-dim"
-            >{{ isPlaying ? 'pause' : 'play_arrow' }}</span
-          >
-        </button>
-        <button
-          type="button"
-          class="text-on-surface-variant transition-colors hover:text-on-surface disabled:opacity-30"
-          :disabled="!nextId"
-          aria-label="Next track"
-          @click="goTo(nextId)"
-        >
-          <span class="material-symbols-outlined text-2xl">skip_next</span>
-        </button>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -229,6 +178,7 @@ import { computed, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useSporky } from '~/stores/sporky';
 import { useAudioPlayer } from '~/composables/useAudioPlayer';
+import { formatTime } from '~/utils/common';
 
 definePageMeta({ layout: false });
 
@@ -301,13 +251,6 @@ const neighborIds = computed(() => {
 });
 const prevId = computed(() => neighborIds.value.prevId);
 const nextId = computed(() => neighborIds.value.nextId);
-
-function formatTime(seconds: number): string {
-  if (!seconds || Number.isNaN(seconds)) return '0:00';
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
 
 const goTo = (id: string | null) => {
   if (id) navigateTo(`/track/${id}`);

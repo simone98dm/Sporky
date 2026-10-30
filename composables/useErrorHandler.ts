@@ -5,11 +5,7 @@ export const useErrorHandler = () => {
   const getErrorMessage = (error: any): string => {
     if (typeof error === 'string') return error;
 
-    // Handle Nuxt/fetch errors
-    if (error?.data?.message) return error.data.message;
-    if (error?.message) return error.message;
-
-    // Handle HTTP status codes
+    // HTTP status first: Spotify's raw error text isn't meant for end users.
     if (error?.status) {
       switch (error.status) {
         case 401:
@@ -19,13 +15,19 @@ export const useErrorHandler = () => {
         case 404:
           return 'Resource not found.';
         case 429:
-          return 'Too many requests. Please try again later.';
+          return 'Spotify is rate-limiting requests. Wait a minute and try again.';
         case 500:
-          return 'Server error. Please try again later.';
+          return 'Spotify is having trouble right now. Please try again later.';
         default:
-          return `Request failed with status ${error.status}`;
+          return `Spotify returned an error (${error.status}). Please try again.`;
       }
     }
+
+    // $fetch network failures carry no status.
+    if (error?.name === 'FetchError') {
+      return "Couldn't reach Spotify. Check your connection and try again.";
+    }
+    if (error?.message) return error.message;
 
     return 'An unexpected error occurred';
   };

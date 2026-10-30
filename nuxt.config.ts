@@ -2,7 +2,7 @@ export default defineNuxtConfig({
   modules: ['@nuxtjs/tailwindcss', '@pinia/nuxt'],
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
-  // Fonts are self-hosted so no visitor IP is sent to Google (see docs/privacy-audit.md).
+  // Fonts are self-hosted so no visitor IP is sent to Google.
   css: [
     '@fontsource-variable/inter',
     'material-symbols/outlined.css',

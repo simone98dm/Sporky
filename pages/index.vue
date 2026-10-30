@@ -1,213 +1,199 @@
 <template>
-  <div class="mx-auto mt-8 flex max-w-7xl flex-col gap-section-margin md:mt-12">
-    <!-- Header -->
-    <section
-      class="flex flex-col justify-between gap-6 md:flex-row md:items-end"
+  <div class="mx-auto mt-6 flex max-w-6xl flex-col gap-12 md:mt-10">
+    <!-- Header: the greeting is context; the #1 card below is the page title -->
+    <header
+      class="flex flex-col justify-between gap-4 md:flex-row md:items-center"
     >
-      <div>
-        <h2
-          class="mb-2 text-display-lg-mobile text-on-surface md:text-display-lg"
-        >
-          {{ greeting }}.
-        </h2>
-        <p class="text-body-lg text-on-surface-variant">
-          Your listening patterns are evolving. Here's a look at your recent
-          rhythm.
-        </p>
-      </div>
+      <p class="text-body-lg text-on-surface-variant">
+        <span class="font-semibold text-on-surface">{{ greeting }}.</span>
+        {{ subtitle }}
+      </p>
       <TimePeriodSelector
         :model-value="timeRange"
         variant="short"
-        :disabled="isLoading"
+        :disabled="isPending"
         @update:model-value="handleTimeRangeChange"
       />
-    </section>
+    </header>
 
     <!-- Error -->
     <ErrorMessage
       v-if="hasError"
-      :message="errorMessage || 'An error occurred'"
+      title="Couldn't load your top tracks"
+      :message="errorMessage || 'Something went wrong. Please try again.'"
       :show-retry="true"
       @retry="handleRetry"
     />
 
-    <!-- Bento grid -->
-    <section v-else class="grid grid-cols-1 gap-card-gap md:grid-cols-3">
-      <template v-if="isLoading">
-        <div v-for="n in 3" :key="n" class="h-64 rounded-xl skeleton"></div>
-      </template>
+    <!-- Loading -->
+    <div v-else-if="isPending" class="flex flex-col gap-12" aria-busy="true">
+      <span class="sr-only" role="status">Loading your top tracks…</span>
+      <div class="skeleton h-[22rem] rounded-2xl md:h-80"></div>
+      <div class="flex flex-col gap-3">
+        <div v-for="n in 5" :key="n" class="skeleton h-16 rounded-lg"></div>
+      </div>
+    </div>
 
-      <template v-else-if="hasTracks">
-        <!-- Top Artist -->
+    <template v-else-if="featuredTrack">
+      <!-- #1: the Wrapped-style reveal. Keyed so it replays per range. -->
+      <section
+        :key="`${timeRange}-${featuredTrack.id}`"
+        aria-labelledby="top-track-title"
+        class="relative isolate overflow-hidden rounded-2xl bg-surface-container-low"
+      >
+        <TrackArtwork
+          :src="featuredTrack.cover"
+          aria-hidden="true"
+          loading="eager"
+          fetchpriority="high"
+          class="absolute inset-0 -z-10 h-full w-full scale-125 opacity-60 blur-3xl saturate-150"
+        />
         <div
-          class="layer-1 group relative h-64 cursor-default overflow-hidden rounded-xl p-6"
-        >
-          <div
-            class="absolute inset-0 z-0 bg-cover bg-center opacity-40 blur-sm transition-opacity duration-300 group-hover:opacity-60"
-            :style="{ backgroundImage: `url('${topArtistCover}')` }"
-          ></div>
-          <div
-            class="absolute inset-0 z-0 bg-gradient-to-t from-[#181818] via-[#181818]/80 to-transparent"
-          ></div>
-          <div class="relative z-10 flex h-full flex-col justify-end">
-            <div class="mb-2 flex items-center gap-2">
-              <span class="material-symbols-outlined fill text-sm text-primary"
-                >stars</span
-              >
-              <span
-                class="text-label-caps uppercase tracking-wider text-primary"
-                >Top Artist</span
-              >
-            </div>
-            <h3 class="text-headline-md text-on-surface">
-              {{ topArtistName }}
-            </h3>
-            <p class="mt-1 text-body-sm text-on-surface-variant">
-              {{ topArtistCount }} track{{ topArtistCount === 1 ? '' : 's' }} in
-              your top
-            </p>
-          </div>
-        </div>
+          class="absolute inset-0 -z-10 bg-gradient-to-t from-background via-background/70 to-background/20"
+        ></div>
 
-        <!-- Diversity (repurposed Vibe Profile card with real data) -->
-        <div class="layer-1 relative h-64 overflow-hidden rounded-xl p-6">
-          <div
-            class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent"
-          ></div>
-          <div class="relative z-10 mb-4 flex items-center justify-between">
-            <span
-              class="text-label-caps uppercase tracking-wider text-on-surface-variant"
-              >Diversity</span
-            >
-            <span class="material-symbols-outlined text-on-surface-variant"
-              >graphic_eq</span
-            >
-          </div>
-          <div class="relative z-10 flex flex-grow items-center justify-center">
-            <h3
-              class="text-center text-display-lg-mobile leading-tight text-on-surface"
-            >
-              {{ uniqueArtistsCount }}<br /><span
-                class="text-body-lg font-normal text-on-surface-variant"
-                >unique artists</span
-              >
-            </h3>
-          </div>
-          <div class="relative z-10 mt-auto">
-            <div
-              class="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-high"
-            >
-              <div
-                class="h-full rounded-full bg-primary-container"
-                :style="{ width: `${diversityPct}%` }"
-              ></div>
-            </div>
-            <div
-              class="mt-2 flex justify-between text-body-sm text-on-surface-variant"
-            >
-              <span>Variety score</span>
-              <span>{{ diversityPct }}%</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Featured track (repurposed Active Session, glass) -->
+        <!-- Mobile: art + numeral side by side, text below.
+             Desktop: art on the left spanning both rows. -->
         <div
-          v-if="featuredTrack"
-          class="glass-panel relative h-64 overflow-hidden rounded-xl border-primary-container/30 p-6"
+          class="grid grid-cols-[7rem_1fr] items-end gap-x-5 gap-y-5 p-6 md:grid-cols-[14rem_1fr] md:gap-x-10 md:gap-y-2 md:p-10"
         >
-          <div class="z-10 mb-6 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <div
-                class="h-2 w-2 rounded-full bg-primary"
-                :class="{ 'animate-pulse': isFeaturedPlaying }"
-              ></div>
-              <span
-                class="text-label-caps uppercase tracking-wider text-primary"
-                >Featured</span
-              >
-            </div>
-            <button
-              v-if="featuredTrack.preview"
-              type="button"
-              class="text-on-surface-variant transition-colors hover:text-on-surface"
-              :aria-label="isFeaturedPlaying ? 'Pause preview' : 'Play preview'"
-              @click="player.toggle(featuredTrack)"
-            >
-              <span class="material-symbols-outlined fill">{{
-                isFeaturedPlaying ? 'pause_circle' : 'play_circle'
-              }}</span>
-            </button>
-          </div>
           <NuxtLink
             :to="`/track/${featuredTrack.id}`"
-            class="z-10 flex items-center gap-4"
+            class="reveal-art block md:row-span-2 md:self-end"
+            tabindex="-1"
+            aria-hidden="true"
           >
-            <img
+            <TrackArtwork
               :src="featuredTrack.cover"
-              :alt="`${featuredTrack.name} artwork`"
-              class="h-20 w-20 rounded-lg object-cover shadow-lg"
+              loading="eager"
+              class="aspect-square w-full rounded-xl shadow-[0_24px_48px_-12px_rgba(0,0,0,0.6)]"
             />
-            <div>
-              <h4 class="text-lg leading-tight text-on-surface">
-                {{ featuredTrack.name }}
-              </h4>
-              <p class="mt-1 text-body-sm text-on-surface-variant">
-                {{ featuredArtists }}
-              </p>
-            </div>
           </NuxtLink>
-          <!-- Decorative visualizer -->
-          <div
-            class="z-10 mt-auto flex h-12 items-end justify-center gap-1 opacity-50"
+
+          <p
+            class="reveal-numeral text-[5.5rem] font-extrabold leading-[0.8] tracking-[-0.04em] text-on-surface md:text-[7rem]"
+            aria-hidden="true"
           >
-            <span
-              v-for="(h, i) in barHeights"
-              :key="i"
-              class="w-1.5 rounded-t-sm bg-primary"
-              :style="{
-                height: `${h}%`,
-                animation: isFeaturedPlaying
-                  ? `bounce ${0.8 + (i % 4) * 0.2}s infinite ${i * 80}ms`
-                  : 'none',
-              }"
-            ></span>
+            #1
+          </p>
+
+          <div class="reveal-text col-span-2 min-w-0 md:col-span-1">
+            <h1
+              id="top-track-title"
+              class="line-clamp-2 text-balance text-display-lg-mobile text-on-surface md:text-display-lg"
+            >
+              <span class="sr-only">Your number 1: </span
+              >{{ featuredTrack.name }}
+            </h1>
+            <p class="mt-1 truncate text-body-lg text-on-surface-variant">
+              {{ artistNames(featuredTrack) }}
+            </p>
+
+            <div class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+              <button
+                v-if="featuredTrack.preview"
+                type="button"
+                class="inline-flex h-12 items-center gap-2 rounded-full bg-primary-container pl-4 pr-6 font-bold text-on-primary-container transition-colors hover:bg-primary-fixed-dim hover:text-on-primary active:scale-[0.98]"
+                @click="player.toggle(featuredTrack)"
+              >
+                <span aria-hidden="true" class="material-symbols-outlined fill">
+                  {{ isPlaying(featuredTrack) ? 'pause' : 'play_arrow' }}
+                </span>
+                {{
+                  isPlaying(featuredTrack) ? 'Pause preview' : 'Play preview'
+                }}
+              </button>
+              <p v-else class="text-body-sm text-on-surface-variant">
+                No preview available for this track.
+              </p>
+              <NuxtLink
+                :to="`/track/${featuredTrack.id}`"
+                class="inline-flex min-h-11 items-center gap-1 font-semibold text-on-surface underline-offset-4 hover:underline"
+              >
+                Track details
+                <span aria-hidden="true" class="material-symbols-outlined">
+                  arrow_forward
+                </span>
+              </NuxtLink>
+            </div>
           </div>
         </div>
-      </template>
+      </section>
 
-      <!-- Empty -->
-      <div
-        v-else
-        class="col-span-full flex flex-col items-center justify-center rounded-xl py-16 text-center layer-1"
+      <!-- What changed vs another range, said as sentences -->
+      <section
+        v-if="highlights.length"
+        aria-label="Highlights"
+        class="border-y border-outline-variant/40 py-8"
       >
-        <span
-          class="material-symbols-outlined mb-4 text-5xl text-on-surface-variant"
-          >music_off</span
-        >
-        <h3 class="mb-2 text-headline-md text-on-surface">No tracks found</h3>
-        <p class="max-w-md text-body-sm text-on-surface-variant">
-          Listen to more music on Spotify or try a different time period.
-        </p>
-      </div>
+        <ul class="grid gap-6 md:grid-cols-3 md:gap-10">
+          <li
+            v-for="h in highlights"
+            :key="h.key"
+            class="text-lg leading-snug text-on-surface-variant"
+          >
+            <strong class="font-bold text-on-surface">{{ h.lead }}</strong>
+            {{ h.rest }}
+          </li>
+        </ul>
+      </section>
+
+      <!-- #2…#N -->
+      <section v-if="restTracks.length" aria-labelledby="rest-title">
+        <h2 id="rest-title" class="mb-4 text-headline-md text-on-surface">
+          The rest of your top {{ trackCount }}
+        </h2>
+        <ol start="2" class="flex flex-col">
+          <ChartRow
+            v-for="(track, i) in restTracks"
+            :key="track.id"
+            :track="track"
+            :rank="i + 2"
+          />
+        </ol>
+      </section>
+    </template>
+
+    <!-- Empty -->
+    <section
+      v-else
+      class="flex flex-col items-center justify-center rounded-xl py-16 text-center layer-1"
+    >
+      <span
+        aria-hidden="true"
+        class="material-symbols-outlined mb-4 text-5xl text-on-surface-variant"
+        >music_off</span
+      >
+      <h2 class="mb-2 text-headline-md text-on-surface">
+        No top tracks for {{ rangeLabel }}
+      </h2>
+      <p class="max-w-md text-body-sm text-on-surface-variant">
+        Spotify needs a bit more listening history for this period. Try a longer
+        time range.
+      </p>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
+import type { Track } from '~/types';
 import { useSporky } from '~/stores/sporky';
 import { useAudioPlayer } from '~/composables/useAudioPlayer';
+import { TIME_RANGE_OPTIONS } from '~/utils/const';
+
+type Range = (typeof TIME_RANGE_OPTIONS)[number]['value'];
 
 const store = useSporky();
 const {
   errorMessage,
   timeRange,
   isLoading,
+  isIdle,
   hasError,
-  currentTracks,
-  uniqueArtistsCount,
+  topTenTracks,
+  comparison,
   topArtistName,
   topArtistCount,
   userProfile,
@@ -215,47 +201,152 @@ const {
 
 const player = useAudioPlayer();
 
-const hasTracks = computed(() => currentTracks.value.length > 0);
-const featuredTrack = computed(() => currentTracks.value[0]);
+// Idle covers the server render, before onMounted starts the fetch, so the
+// empty state never flashes.
+const isPending = computed(() => isLoading.value || isIdle.value);
+const featuredTrack = computed(() => topTenTracks.value[0]);
+const restTracks = computed(() => topTenTracks.value.slice(1));
+const trackCount = computed(() => topTenTracks.value.length);
 
-// Cover art of a track actually by the top artist (matches the displayed name).
-const topArtistCover = computed(() => {
-  const match = currentTracks.value.find((t) =>
-    t.artists.some((a) => a.name === topArtistName.value),
-  );
-  return match?.cover ?? featuredTrack.value?.cover ?? '';
+const labelOf = (range: Range) =>
+  TIME_RANGE_OPTIONS.find((o) => o.value === range)?.label.toLowerCase() ?? '';
+const rangeLabel = computed(() => labelOf(timeRange.value));
+
+interface Highlight {
+  key: string;
+  lead: string;
+  rest: string;
+}
+
+const topRankSentence = (rank: number, other: string, size: number) => {
+  if (rank === 1) return `is your #1 ${other} too.`;
+  if (rank > 1) return `ranks #${rank} ${other}.`;
+  return `isn't in your top ${size} ${other}.`;
+};
+
+// Up to three facts: how #1 ranks elsewhere, how much the list turned over,
+// and an artist that recurs. Each is skipped when it would say nothing.
+const highlights = computed<Highlight[]>(() => {
+  const top = featuredTrack.value;
+  if (!top) return [];
+  const list: Highlight[] = [];
+  const c = comparison.value;
+
+  if (c) {
+    const other = `over the ${labelOf(c.otherRange)}`;
+    list.push({
+      key: 'top',
+      lead: top.name,
+      rest: topRankSentence(c.topRankInOther, other, c.otherSize),
+    });
+    list.push(
+      c.newEntries
+        ? {
+            key: 'new',
+            lead: `${c.newEntries} of these ${trackCount.value}`,
+            rest: `aren't in your top 10 ${other}.`,
+          }
+        : {
+            key: 'new',
+            lead: 'Every track here',
+            rest: `is also in your top 10 ${other}.`,
+          },
+    );
+  }
+
+  if (topArtistCount.value >= 2) {
+    list.push({
+      key: 'artist',
+      lead: topArtistName.value,
+      rest: `is on ${topArtistCount.value} of your top ${trackCount.value}.`,
+    });
+  }
+  return list;
 });
-const featuredArtists = computed(() =>
-  featuredTrack.value?.artists.map((a) => a.name).join(', '),
-);
-const isFeaturedPlaying = computed(
-  () =>
-    !!featuredTrack.value &&
-    player.isCurrent(featuredTrack.value.id) &&
-    player.isPlaying.value,
+
+const subtitle = computed(() =>
+  trackCount.value && !isPending.value
+    ? `Your top ${trackCount.value} from the ${rangeLabel.value}.`
+    : 'Your most-played tracks on Spotify, ranked.',
 );
 
-const diversityPct = computed(() =>
-  Math.round(
-    (uniqueArtistsCount.value / Math.max(currentTracks.value.length, 1)) * 100,
-  ),
-);
+const artistNames = (track: Track) =>
+  track.artists.map((a) => a.name).join(', ');
+const isPlaying = (track: Track) =>
+  player.isCurrent(track.id) && player.isPlaying.value;
 
-const barHeights = [100, 66, 25, 80, 50, 100, 33, 75];
-
+// Hour is read on the client only, so server and client render the same text.
+const hour = ref<number | null>(null);
+const salute = (h: number | null) => {
+  if (h === null) return 'Hello';
+  if (h < 12) return 'Good morning';
+  if (h < 18) return 'Good afternoon';
+  return 'Good evening';
+};
 const greeting = computed(() => {
-  const h = new Date().getHours();
-  const part = h < 12 ? 'Morning' : h < 18 ? 'Afternoon' : 'Evening';
   const name = userProfile.value?.display_name?.split(' ')[0];
-  return name ? `Good ${part}, ${name}` : `Good ${part}`;
+  return name ? `${salute(hour.value)}, ${name}` : salute(hour.value);
 });
 
 const handleRetry = () => store.getTopTracks();
 const handleTimeRangeChange = (value: typeof timeRange.value) =>
   store.setTimeRange(value);
 
-onMounted(() => {
+onMounted(async () => {
+  hour.value = new Date().getHours();
   store.getUserProfile();
-  store.getTopTracks();
+  await store.getTopTracks();
+  store.prefetchOtherRanges();
 });
 </script>
+
+<style scoped>
+/* One authored moment: the #1 reveal. Elements are visible by default;
+   the global reduced-motion rule collapses these to an instant render. */
+.reveal-numeral,
+.reveal-art,
+.reveal-text {
+  animation: 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.reveal-numeral {
+  animation-name: wipe-up;
+}
+.reveal-art {
+  animation-name: settle;
+  animation-delay: 120ms;
+}
+.reveal-text {
+  animation-name: rise;
+  animation-delay: 240ms;
+}
+@keyframes wipe-up {
+  from {
+    clip-path: inset(100% 0 0 0);
+    transform: translateY(24px);
+  }
+  to {
+    clip-path: inset(0);
+    transform: none;
+  }
+}
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+</style>

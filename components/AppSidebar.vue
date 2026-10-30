@@ -1,67 +1,67 @@
 <template>
-  <!-- Desktop sidebar -->
+  <!-- Desktop sidebar; mobile uses AppTabBar -->
   <aside
-    class="fixed left-0 top-0 z-40 hidden h-full w-[280px] flex-col border-r border-surface-container-low bg-surface px-6 py-8 md:flex"
+    class="fixed left-0 top-0 z-40 hidden h-full w-[280px] flex-col gap-y-6 border-r border-surface-container-low bg-surface px-6 py-8 md:flex"
   >
-    <AppSidebarContent />
-  </aside>
+    <!-- Brand -->
+    <NuxtLink to="/" class="mb-4 flex items-center gap-3 rounded-lg">
+      <span
+        class="flex h-12 w-12 items-center justify-center rounded-full bg-primary-container/20"
+      >
+        <span
+          aria-hidden="true"
+          class="material-symbols-outlined fill text-primary"
+          >graphic_eq</span
+        >
+      </span>
+      <span class="text-display-lg-mobile leading-none text-on-surface"
+        >Sporky</span
+      >
+    </NuxtLink>
 
-  <!-- Mobile drawer -->
-  <Transition name="fade">
-    <div
-      v-if="navOpen"
-      class="fixed inset-0 z-50 bg-black/60 md:hidden"
-      @click="navOpen = false"
-    ></div>
-  </Transition>
-  <Transition name="slide">
-    <aside
-      v-if="navOpen"
-      class="fixed left-0 top-0 z-50 flex h-full w-[280px] flex-col border-r border-surface-container-low bg-surface px-6 py-8 md:hidden"
-    >
+    <!-- Navigation -->
+    <nav aria-label="Main" class="flex flex-grow flex-col gap-1">
+      <NuxtLink
+        v-for="item in NAV_ITEMS"
+        :key="item.label"
+        :to="item.to"
+        :aria-current="isActiveNav(item, route.path) ? 'page' : undefined"
+        :class="[
+          'flex min-h-11 items-center gap-4 rounded-lg px-4 py-3 transition-colors duration-200',
+          isActiveNav(item, route.path)
+            ? 'bg-surface-container-high font-bold text-on-surface'
+            : 'font-medium text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
+        ]"
+      >
+        <span
+          aria-hidden="true"
+          class="material-symbols-outlined"
+          :class="isActiveNav(item, route.path) ? 'fill text-primary' : ''"
+          >{{ item.icon }}</span
+        >
+        <span>{{ item.label }}</span>
+      </NuxtLink>
+    </nav>
+
+    <!-- Footer -->
+    <div class="mt-auto border-t border-surface-container-low pt-6">
       <button
         type="button"
-        class="absolute right-4 top-4 text-on-surface-variant hover:text-on-surface"
-        aria-label="Close menu"
-        @click="navOpen = false"
+        class="flex min-h-11 w-full items-center gap-4 rounded-lg px-4 py-2 font-medium text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+        @click="store.logout()"
       >
-        <span class="material-symbols-outlined">close</span>
+        <span aria-hidden="true" class="material-symbols-outlined">logout</span>
+        <span>Log out</span>
       </button>
-      <AppSidebarContent @navigate="navOpen = false" />
-    </aside>
-  </Transition>
+    </div>
+  </aside>
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue';
+import { useSporky } from '~/stores/sporky';
+import { NAV_ITEMS } from '~/utils/const';
+import { isActiveNav } from '~/utils/common';
 
-const navOpen = useState<boolean>('nav-open', () => false);
+const store = useSporky();
 const route = useRoute();
-
-// Close the drawer whenever the route changes.
-watch(
-  () => route.fullPath,
-  () => {
-    navOpen.value = false;
-  },
-);
 </script>
-
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-.slide-enter-active,
-.slide-leave-active {
-  transition: transform 0.25s ease;
-}
-.slide-enter-from,
-.slide-leave-to {
-  transform: translateX(-100%);
-}
-</style>

@@ -6,13 +6,15 @@
       <div
         class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-error/20"
       >
-        <span class="material-symbols-outlined text-error">error</span>
+        <span aria-hidden="true" class="material-symbols-outlined text-error"
+          >error</span
+        >
       </div>
 
       <div class="flex-1">
-        <h3 class="mb-2 text-body-lg font-semibold text-error">
+        <h2 class="mb-2 text-body-lg font-semibold text-error">
           {{ title || 'Something went wrong' }}
-        </h3>
+        </h2>
         <p class="mb-4 text-body-sm leading-relaxed text-on-surface-variant">
           {{ message }}
         </p>
@@ -24,7 +26,9 @@
             class="inline-flex items-center gap-2 rounded-full bg-error/20 px-4 py-2 font-medium text-error transition-colors hover:bg-error/30"
             @click="emit('retry')"
           >
-            <span class="material-symbols-outlined text-base">refresh</span>
+            <span aria-hidden="true" class="material-symbols-outlined text-base"
+              >refresh</span
+            >
             Try Again
           </button>
 
@@ -34,7 +38,9 @@
             class="inline-flex items-center gap-2 rounded-full px-4 py-2 font-medium text-on-surface-variant transition-colors hover:text-on-surface"
             @click="emit('dismiss')"
           >
-            <span class="material-symbols-outlined text-base">close</span>
+            <span aria-hidden="true" class="material-symbols-outlined text-base"
+              >close</span
+            >
             Dismiss
           </button>
         </div>

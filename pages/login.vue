@@ -26,7 +26,9 @@
           <div
             class="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary-container/20"
           >
-            <span class="material-symbols-outlined fill text-4xl text-primary"
+            <span
+              aria-hidden="true"
+              class="material-symbols-outlined fill text-4xl text-primary"
               >graphic_eq</span
             >
           </div>
@@ -48,7 +50,11 @@
             <div
               class="flex items-center gap-3 rounded-lg border border-error/20 bg-error-container/20 p-4"
             >
-              <span class="material-symbols-outlined text-error">error</span>
+              <span
+                aria-hidden="true"
+                class="material-symbols-outlined text-error"
+                >error</span
+              >
               <p class="text-body-sm text-on-surface-variant">
                 {{ errorMessage }}
               </p>
@@ -78,16 +84,12 @@
           <p
             class="max-w-[280px] pt-6 text-center text-body-sm text-on-surface-variant/60"
           >
-            By connecting, Sporky reads your Spotify profile and top tracks as
-            described in the
-            <NuxtLink to="/privacy" class="underline underline-offset-4"
-              >Privacy Policy</NuxtLink
-            >.
+            By connecting, Sporky reads your Spotify profile and top tracks.
+            Nothing is stored outside your browser.
           </p>
         </div>
       </div>
     </div>
-    <AppFooter class="relative z-10" />
   </div>
 </template>
 
@@ -121,10 +123,8 @@ const errorMessage = computed(() => {
       return 'Login session expired or was tampered with. Please try again.';
     case 'auth_failed':
       return 'Authentication failed. Please check your credentials.';
-    case 'true':
-      return 'An error occurred during login. Please try again.';
     default:
-      return `Error: ${errorParam.value}`;
+      return 'An error occurred during login. Please try again.';
   }
 });
 </script>
