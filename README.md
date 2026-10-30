@@ -11,6 +11,23 @@ A modern web application that displays your top Spotify tracks with beautiful vi
 - 🔄 Real-time loading states and error handling
 - 🎨 Beautiful card-based track display with album artwork
 
+## 📸 Screenshots
+
+> Demo data: track names, artists, and covers are fictional.
+
+| Home | Top Charts |
+| --- | --- |
+| ![Home](docs/screenshots/home-desktop.png) | ![Top Charts](docs/screenshots/top-charts-desktop.png) |
+| **Track details** | **Login** |
+| ![Track details](docs/screenshots/track-detail-desktop.png) | ![Login](docs/screenshots/login-desktop.png) |
+
+<p align="center">
+  <img src="docs/screenshots/home-mobile.png" alt="Home on mobile" width="200" />
+  <img src="docs/screenshots/top-charts-mobile.png" alt="Top Charts on mobile" width="200" />
+  <img src="docs/screenshots/track-detail-mobile.png" alt="Track details on mobile" width="200" />
+  <img src="docs/screenshots/login-mobile.png" alt="Login on mobile" width="200" />
+</p>
+
 ## 🛠️ Tech Stack
 
 - **Framework**: [Nuxt 3](https://nuxt.com/) - The intuitive Vue framework
