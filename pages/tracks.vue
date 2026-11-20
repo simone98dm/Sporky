@@ -1,31 +1,23 @@
 <template>
-  <div class="mx-auto mt-6 flex max-w-5xl flex-col gap-8 md:mt-10">
+  <div class="charts">
     <header>
-      <h1
-        class="mb-2 text-display-lg-mobile text-on-surface md:text-display-lg"
-      >
-        Top Charts
-      </h1>
-      <p class="text-body-lg text-on-surface-variant">{{ subtitle }}</p>
+      <h1 class="charts__title">Top Charts</h1>
+      <p class="charts__subtitle">{{ subtitle }}</p>
     </header>
 
     <!-- Range + legend, pinned under the top bar while scrolling the chart -->
-    <div
-      class="sticky top-16 z-20 -mx-gutter flex flex-wrap items-center justify-between gap-x-6 gap-y-2 bg-surface/60 px-gutter py-3 backdrop-blur-3xl md:-mx-container-padding md:px-container-padding"
-    >
+    <div class="charts__toolbar">
       <TimePeriodSelector
         :model-value="timeRange"
-        variant="short"
         :disabled="isPending"
         @update:model-value="handleTimeRangeChange"
       />
-      <p
-        v-if="legend && !isPending"
-        class="flex items-center gap-1.5 text-body-sm text-on-surface-variant"
-      >
-        <span aria-hidden="true" class="material-symbols-outlined text-base">{{
-          isFading ? 'trending_down' : 'swap_vert'
-        }}</span>
+      <p v-if="legend && !isPending" class="charts__legend">
+        <span
+          aria-hidden="true"
+          class="material-symbols-outlined charts__legend-icon"
+          >{{ isFading ? 'trending_down' : 'swap_vert' }}</span
+        >
         {{ legend }}
       </p>
     </div>
@@ -40,54 +32,48 @@
     />
 
     <!-- Loading -->
-    <div v-else-if="isPending" class="flex flex-col gap-3" aria-busy="true">
+    <div v-else-if="isPending" class="charts__loading" aria-busy="true">
       <span class="sr-only" role="status">Loading your chart…</span>
-      <div class="grid gap-4 md:grid-cols-3">
+      <div class="movers">
         <div
           v-for="n in 3"
           :key="`m${n}`"
-          class="skeleton h-36 rounded-xl"
+          class="skeleton charts__loading-mover"
         ></div>
       </div>
-      <div class="skeleton h-72 rounded-2xl"></div>
-      <div v-for="n in 5" :key="n" class="skeleton h-16 rounded-lg"></div>
+      <div class="skeleton charts__loading-podium"></div>
+      <div v-for="n in 5" :key="n" class="skeleton charts__loading-row"></div>
     </div>
 
     <template v-else-if="currentTracks.length">
       <!-- What moved: the reason this page exists -->
       <section v-if="biggestMovers.length" aria-labelledby="movers-title">
-        <h2 id="movers-title" class="mb-4 text-headline-md text-on-surface">
+        <h2 id="movers-title" class="charts__section-title">
           {{ isFading ? 'Fading from your rotation' : 'Biggest movers' }}
         </h2>
-        <ul class="grid gap-4 md:grid-cols-3">
+        <ul class="movers">
           <li v-for="m in biggestMovers" :key="`${m.kind}-${m.track.id}`">
-            <NuxtLink
-              :to="`/track/${m.track.id}`"
-              class="relative isolate flex h-full flex-col gap-3 overflow-hidden rounded-xl bg-surface-container-low p-5 transition-colors hover:bg-surface-container"
-            >
-              <TrackArtwork
+            <NuxtLink :to="`/track/${m.track.id}`" class="mover">
+              <ArtworkBackdrop
                 :src="m.track.cover"
-                aria-hidden="true"
-                class="absolute inset-0 -z-10 h-full w-full scale-150 opacity-35 blur-2xl saturate-150"
+                intensity="soft"
+                overlay="none"
               />
-              <div class="flex items-center justify-between gap-4">
+              <div class="mover__top">
                 <span
-                  class="text-[2.5rem] font-extrabold leading-none tracking-[-0.03em] text-on-surface tabular-nums"
-                  :class="{ 'text-primary': m.kind === 'new' }"
+                  class="mover__headline"
+                  :class="{ 'mover__headline--new': m.kind === 'new' }"
                 >
                   {{ moverHeadline(m) }}
                 </span>
-                <TrackArtwork
-                  :src="m.track.cover"
-                  class="h-14 w-14 shrink-0 rounded-md shadow-lg"
-                />
+                <TrackArtwork :src="m.track.cover" class="mover__cover" />
               </div>
-              <div class="min-w-0">
-                <p class="truncate font-semibold text-on-surface">
+              <div class="mover__text">
+                <p class="mover__name">
                   <span class="sr-only">{{ moverKindLabel[m.kind] }}: </span
                   >{{ m.track.name }}
                 </p>
-                <p class="truncate text-body-sm text-on-surface-variant">
+                <p class="mover__detail">
                   {{ moverDetail(m) }}
                 </p>
               </div>
@@ -97,20 +83,9 @@
       </section>
 
       <!-- Podium: #1–#3 over the #1 cover's colour -->
-      <section
-        aria-label="Top 3"
-        class="relative isolate overflow-hidden rounded-2xl bg-surface-container-low px-3 py-2 md:px-6 md:py-4"
-      >
-        <TrackArtwork
-          :src="currentTracks[0].cover"
-          aria-hidden="true"
-          loading="eager"
-          class="absolute inset-0 -z-10 h-full w-full scale-125 opacity-50 blur-3xl saturate-150"
-        />
-        <div
-          class="absolute inset-0 -z-10 bg-gradient-to-r from-background/90 via-background/60 to-background/30"
-        ></div>
-        <ol class="flex flex-col">
+      <section aria-label="Top 3" class="podium">
+        <ArtworkBackdrop :src="currentTracks[0]?.cover" overlay="side" eager />
+        <ol class="charts__list">
           <ChartRow
             v-for="(track, i) in podium"
             :key="track.id"
@@ -124,10 +99,13 @@
 
       <!-- #4 onwards: 20 at first, the rest on request -->
       <section v-if="rest.length" aria-labelledby="rest-title">
-        <h2 id="rest-title" class="mb-2 text-headline-md text-on-surface">
+        <h2
+          id="rest-title"
+          class="charts__section-title charts__section-title--tight"
+        >
           The rest of your top {{ currentTracks.length }}
         </h2>
-        <ol start="4" class="flex flex-col">
+        <ol start="4" class="charts__list">
           <ChartRow
             v-for="(track, i) in visibleRest"
             :key="track.id"
@@ -139,11 +117,13 @@
         <button
           v-if="hiddenCount > 0"
           type="button"
-          class="mt-6 inline-flex min-h-11 items-center gap-2 rounded-full border border-outline-variant px-6 font-semibold text-on-surface transition-colors hover:bg-surface-container"
+          class="show-all"
           @click="showAll = true"
         >
           Show all {{ currentTracks.length }}
-          <span aria-hidden="true" class="material-symbols-outlined"
+          <span
+            aria-hidden="true"
+            class="material-symbols-outlined show-all__icon"
             >expand_more</span
           >
         </button>
@@ -151,26 +131,17 @@
     </template>
 
     <!-- Empty -->
-    <section
+    <EmptyState
       v-else
-      class="flex flex-col items-center justify-center rounded-xl py-16 text-center layer-1"
+      icon="music_off"
+      :title="`No chart for the ${rangeLabel}`"
     >
-      <span
-        aria-hidden="true"
-        class="material-symbols-outlined mb-4 text-5xl text-on-surface-variant"
-        >music_off</span
-      >
-      <h2 class="mb-2 text-headline-md text-on-surface">
-        No chart for the {{ rangeLabel }}
-      </h2>
-      <p class="max-w-md text-body-sm text-on-surface-variant">
-        {{
-          isFading
-            ? "Spotify doesn't have enough listening history for you yet."
-            : 'Spotify needs a bit more listening history for this period. Try a longer time range.'
-        }}
-      </p>
-    </section>
+      {{
+        isFading
+          ? "Spotify doesn't have enough listening history for you yet."
+          : 'Spotify needs a bit more listening history for this period. Try a longer time range.'
+      }}
+    </EmptyState>
   </div>
 </template>
 
@@ -267,3 +238,211 @@ onMounted(async () => {
   store.prefetchOtherRanges();
 });
 </script>
+
+<style scoped lang="scss">
+.charts {
+  margin: space(6) auto 0;
+  display: flex;
+  max-width: 64rem;
+  flex-direction: column;
+  gap: space(8);
+
+  @include from(md) {
+    margin-top: space(10);
+  }
+}
+
+.charts__title {
+  margin-bottom: space(2);
+  @include type(display-lg-mobile);
+  color: token(on-surface);
+
+  @include from(md) {
+    @include type(display-lg);
+  }
+}
+
+.charts__subtitle {
+  @include type(body-lg);
+  color: token(on-surface-variant);
+}
+
+// Range + legend, pinned under the top bar and bleeding to the column edge.
+.charts__toolbar {
+  position: sticky;
+  top: var(--top-bar-height);
+  z-index: 20;
+  margin-inline: calc(-1 * var(--gutter));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: space(2) space(6);
+  background-color: alpha(surface, 60%);
+  padding: space(3) var(--gutter);
+  backdrop-filter: blur(64px);
+
+  @include from(md) {
+    margin-inline: calc(-1 * var(--container-padding));
+    padding-inline: var(--container-padding);
+  }
+}
+
+.charts__legend {
+  display: flex;
+  align-items: center;
+  gap: space(1.5);
+  @include type(body-sm);
+  color: token(on-surface-variant);
+}
+
+.charts__legend-icon {
+  @include icon-size(base);
+}
+
+.charts__loading {
+  display: flex;
+  flex-direction: column;
+  gap: space(3);
+}
+
+.charts__loading-mover {
+  height: space(36);
+  border-radius: var(--radius-xl);
+}
+
+.charts__loading-podium {
+  height: space(72);
+  border-radius: var(--radius-lg);
+}
+
+.charts__loading-row {
+  height: space(16);
+  border-radius: var(--radius-lg);
+}
+
+.charts__section-title {
+  margin-bottom: space(4);
+  @include type(headline-md);
+  color: token(on-surface);
+
+  &--tight {
+    margin-bottom: space(2);
+  }
+}
+
+.charts__list {
+  display: flex;
+  flex-direction: column;
+}
+
+// ── Biggest movers ────────────────────────────────────────────────────
+.movers {
+  display: grid;
+  // minmax(0, 1fr), not auto: truncated titles must not widen the column.
+  grid-template-columns: minmax(0, 1fr);
+  gap: space(4);
+
+  @include from(md) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.mover {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  gap: space(3);
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background-color: token(surface-container-low);
+  padding: space(5);
+  @include transition-colors;
+
+  &:hover {
+    background-color: token(surface-container);
+  }
+}
+
+.mover__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: space(4);
+}
+
+.mover__headline {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: token(on-surface);
+
+  &--new {
+    color: token(primary);
+  }
+}
+
+.mover__cover {
+  width: space(14);
+  height: space(14);
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  box-shadow: $shadow-lg;
+}
+
+.mover__text {
+  min-width: 0;
+}
+
+.mover__name {
+  @include truncate;
+  font-weight: 600;
+  color: token(on-surface);
+}
+
+.mover__detail {
+  @include truncate;
+  @include type(body-sm);
+  color: token(on-surface-variant);
+}
+
+// ── Podium (#1–#3) ────────────────────────────────────────────────────
+.podium {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background-color: token(surface-container-low);
+  padding: space(2) space(3);
+
+  @include from(md) {
+    padding: space(4) space(6);
+  }
+}
+
+.show-all {
+  margin-top: space(6);
+  display: inline-flex;
+  min-height: space(11);
+  align-items: center;
+  gap: space(2);
+  border: 1px solid token(outline-variant);
+  border-radius: var(--radius-full);
+  padding-inline: space(6);
+  font-weight: 600;
+  color: token(on-surface);
+  @include transition-colors;
+
+  &:hover {
+    background-color: token(surface-container);
+  }
+}
+
+.show-all__icon {
+  @include icon-size(xl);
+}
+</style>

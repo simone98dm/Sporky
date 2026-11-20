@@ -47,11 +47,26 @@ export const TRACK_FETCH_LIMIT = 50;
 export const HOME_TRACK_COUNT = 10;
 
 // Spotify OAuth scopes
-export const SPOTIFY_SCOPES = 'user-top-read user-read-private';
+export const SPOTIFY_SCOPES =
+  'user-top-read user-read-private playlist-read-private playlist-read-collaborative';
+
+// Spotify's max page size for playlist endpoints.
+export const PLAYLIST_PAGE_LIMIT = 50;
+
+// Track page "More from {artist}": Spotify caps search at 10 results per page
+// for apps in development mode, and versions of the same song get dropped.
+export const SUGGESTION_SEARCH_LIMIT = 10;
+export const SUGGESTION_COUNT = 6;
 
 // Primary navigation (desktop sidebar + mobile tab bar). `match` is the route
 // prefix that marks the item active; track detail pages belong to Top Charts.
 export const NAV_ITEMS = [
   { label: 'Home', icon: 'home', to: '/', match: null },
   { label: 'Top Charts', icon: 'leaderboard', to: '/tracks', match: '/track' },
+  {
+    label: 'Backup',
+    icon: 'library_music',
+    to: '/playlists',
+    match: '/playlists',
+  },
 ] as const;

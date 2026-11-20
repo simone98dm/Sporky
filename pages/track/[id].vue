@@ -1,114 +1,62 @@
 <template>
-  <div
-    class="ambient-glow relative flex min-h-screen flex-col overflow-x-hidden bg-background"
-  >
-    <main
-      class="relative z-10 flex w-full flex-1 flex-col p-container-padding pb-32 lg:p-section-margin lg:pb-32"
-    >
+  <div class="ambient-glow track-page">
+    <main class="track-page__main">
       <!-- Top bar -->
-      <header
-        class="mb-section-margin flex w-full items-center justify-between"
-      >
-        <NuxtLink
-          to="/tracks"
-          class="group flex items-center gap-unit text-on-surface-variant transition-colors hover:text-primary"
-        >
+      <header class="track-page__header">
+        <NuxtLink to="/tracks" class="back-link">
           <span
             aria-hidden="true"
-            class="material-symbols-outlined text-2xl transition-transform group-hover:-translate-x-1"
+            class="material-symbols-outlined back-link__icon"
             >arrow_back</span
           >
-          <span class="text-body-lg">Back to Library</span>
+          <span class="back-link__label">Back to Library</span>
         </NuxtLink>
-        <span
-          class="rounded-full border border-outline px-3 py-1 text-label-caps text-on-surface-variant"
-          >HQ AUDIO</span
-        >
+        <span class="quality-badge">HQ AUDIO</span>
       </header>
 
-      <div
-        v-if="track"
-        class="grid flex-1 grid-cols-1 gap-card-gap lg:grid-cols-12"
-      >
+      <div v-if="track" class="track-grid">
         <!-- Left: artwork + meta -->
-        <div class="flex flex-col gap-card-gap lg:col-span-5">
-          <div
-            class="group relative aspect-square w-full overflow-hidden rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
-          >
+        <div class="track-grid__column track-grid__column--art">
+          <div class="cover">
             <img
               :src="track.cover"
               :alt="`${track.name} artwork`"
-              class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+              class="cover__image"
             />
-            <div
-              v-if="track.preview"
-              class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-            >
-              <button
-                type="button"
-                class="flex h-16 w-16 items-center justify-center rounded-full bg-primary-container transition-transform hover:scale-105"
-                :aria-label="isPlaying ? 'Pause preview' : 'Play preview'"
-                @click="player.toggle(track)"
-              >
-                <span
-                  aria-hidden="true"
-                  class="material-symbols-outlined fill text-3xl text-on-primary-container"
-                  >{{ isPlaying ? 'pause' : 'play_arrow' }}</span
-                >
-              </button>
-            </div>
           </div>
 
-          <div
-            class="glass-panel flex flex-col gap-unit rounded-xl p-container-padding"
-          >
-            <h1
-              class="truncate text-display-lg-mobile text-on-surface lg:text-display-lg"
-            >
+          <div class="glass-panel track-meta">
+            <h1 class="track-meta__title">
               {{ track.name }}
             </h1>
-            <p class="text-headline-md text-on-surface-variant">
+            <p class="track-meta__artist">
               {{ artistNames }}
             </p>
-            <div class="mt-2 flex flex-wrap gap-3">
-              <span
-                class="rounded-full bg-surface-variant px-3 py-1 text-label-caps text-on-surface-variant"
-                >{{ track.album }}</span
-              >
-              <span
-                class="rounded-full bg-surface-variant px-3 py-1 text-label-caps text-on-surface-variant"
-                >{{ formatTime(track.duration / 1000) }}</span
-              >
+            <div class="track-meta__chips">
+              <span class="chip">{{ track.album }}</span>
+              <span class="chip">{{ formatTime(track.duration / 1000) }}</span>
             </div>
           </div>
         </div>
 
         <!-- Right: waveform + analytics -->
-        <div class="flex flex-col gap-card-gap lg:col-span-7">
+        <div class="track-grid__column track-grid__column--info">
           <!-- Listen panel (real Spotify deep link) -->
-          <div
-            class="glass-panel flex min-h-[300px] flex-1 flex-col items-center justify-center gap-4 rounded-xl p-container-padding text-center"
-          >
+          <div class="glass-panel listen">
             <span
               aria-hidden="true"
-              class="material-symbols-outlined text-5xl text-primary"
+              class="material-symbols-outlined listen__icon"
               >headphones</span
             >
-            <p class="max-w-sm text-body-lg text-on-surface-variant">
-              {{
-                track.preview
-                  ? 'A 30-second preview is available — use the player below.'
-                  : 'No preview is available for this track.'
-              }}
-            </p>
+            <p class="listen__text">Listen to the full track on Spotify.</p>
             <a
               :href="spotifyUrl"
               target="_blank"
               rel="noopener"
-              class="flex items-center gap-3 rounded-full bg-primary-container px-6 py-3 font-bold text-on-primary-container transition-colors hover:bg-primary-fixed-dim hover:text-on-primary"
+              class="spotify-link"
             >
               <svg
-                class="h-5 w-5"
+                class="spotify-link__logo"
                 fill="currentColor"
                 viewBox="0 0 24 24"
                 aria-hidden="true"
@@ -122,50 +70,80 @@
           </div>
 
           <!-- Analytics (real Spotify data) -->
-          <div class="grid grid-cols-1 gap-gutter md:grid-cols-3">
+          <div class="stats">
             <div
               v-for="stat in stats"
               :key="stat.label"
-              class="glass-panel flex flex-col gap-2 rounded-lg p-gutter"
+              class="glass-panel stat"
             >
-              <div
-                class="flex items-center justify-between text-on-surface-variant"
-              >
-                <span class="text-body-sm">{{ stat.label }}</span>
+              <div class="stat__header">
+                <span class="stat__label">{{ stat.label }}</span>
                 <span
                   aria-hidden="true"
-                  class="material-symbols-outlined text-sm"
+                  class="material-symbols-outlined stat__icon"
                   >{{ stat.icon }}</span
                 >
               </div>
-              <div class="text-headline-md text-on-surface">
+              <div class="stat__value">
                 {{ stat.value }}
               </div>
-              <div
-                class="mt-1 h-2 w-full overflow-hidden rounded-full bg-surface-container-high"
-              >
-                <div
-                  class="h-full rounded-full bg-primary"
-                  :style="{ width: `${stat.pct}%` }"
-                ></div>
+              <div class="stat__track">
+                <div class="stat__bar" :style="{ width: `${stat.pct}%` }"></div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Not found -->
-      <div
-        v-else-if="!isLoading"
-        class="flex flex-1 flex-col items-center justify-center text-center"
+      <!-- More from the artist (opens in Spotify: these usually aren't in
+           your charts, which is all this page can show) -->
+      <section
+        v-if="track && hasSuggestions"
+        aria-labelledby="more-title"
+        class="more"
       >
+        <h2 id="more-title" class="more__title">More from {{ leadArtist }}</h2>
+        <div v-if="isLoadingSuggestions" class="more__list" aria-busy="true">
+          <span class="sr-only" role="status">Loading suggestions…</span>
+          <div
+            v-for="n in SUGGESTION_COUNT"
+            :key="n"
+            class="skeleton more__skeleton"
+          ></div>
+        </div>
+        <ul v-else class="more__list">
+          <li v-for="song in suggestions" :key="song.id">
+            <a
+              :href="`https://open.spotify.com/track/${song.id}`"
+              target="_blank"
+              rel="noopener"
+              class="suggestion"
+            >
+              <TrackArtwork :src="song.cover" class="suggestion__cover" />
+              <span class="suggestion__text">
+                <span class="suggestion__name">{{ song.name }}</span>
+                <span class="suggestion__album">{{ song.album }}</span>
+              </span>
+              <span
+                aria-hidden="true"
+                class="material-symbols-outlined suggestion__icon"
+                >open_in_new</span
+              >
+              <span class="sr-only">(opens in Spotify)</span>
+            </a>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Not found -->
+      <div v-else-if="!isLoading" class="not-found">
         <span
           aria-hidden="true"
-          class="material-symbols-outlined mb-4 text-5xl text-on-surface-variant"
+          class="material-symbols-outlined not-found__icon"
           >music_off</span
         >
-        <h2 class="mb-2 text-headline-md text-on-surface">Track not found</h2>
-        <NuxtLink to="/tracks" class="text-primary hover:underline"
+        <h2 class="not-found__title">Track not found</h2>
+        <NuxtLink to="/tracks" class="not-found__link"
           >Back to your tracks</NuxtLink
         >
       </div>
@@ -177,15 +155,17 @@
 import { computed, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useSporky } from '~/stores/sporky';
-import { useAudioPlayer } from '~/composables/useAudioPlayer';
+import { useSpotifyApi } from '~/composables/useSpotifyApi';
 import { formatTime } from '~/utils/common';
+import { mapTrackToSong } from '~/utils/mapper';
+import { pickSuggestions } from '~/utils/suggestions';
+import { SUGGESTION_COUNT } from '~/utils/const';
 
 definePageMeta({ layout: false });
 
 const route = useRoute();
 const store = useSporky();
 const { currentTracks, isLoading } = storeToRefs(store);
-const player = useAudioPlayer();
 
 const trackId = computed(() => route.params.id as string);
 const track = computed(() => store.getTrackById(trackId.value));
@@ -198,15 +178,28 @@ const spotifyUrl = computed(() =>
   track.value ? `https://open.spotify.com/track/${track.value.id}` : '#',
 );
 
-const isPlaying = computed(
-  () =>
-    !!track.value && player.isCurrent(track.value.id) && player.isPlaying.value,
+// "More from {artist}": the artist's other songs, from Spotify search.
+const { searchArtistTracks } = useSpotifyApi();
+const leadArtist = computed<string | undefined>(
+  () => track.value?.artists[0]?.name,
 );
-
-const currentTime = computed(() => player.currentTime.value);
-const duration = computed(() => player.duration.value);
-const progressPct = computed(() =>
-  duration.value ? (currentTime.value / duration.value) * 100 : 0,
+const { data: suggestions, pending: isLoadingSuggestions } = useAsyncData(
+  () => `suggestions-${trackId.value}`,
+  async () => {
+    if (!track.value || !leadArtist.value) return [];
+    const results = await searchArtistTracks(leadArtist.value);
+    return pickSuggestions(
+      results.map(mapTrackToSong),
+      track.value,
+      SUGGESTION_COUNT,
+    );
+  },
+  // Client only, like the chart this page reads from. Optional content: on
+  // error the section just doesn't render.
+  { server: false, watch: [leadArtist], default: () => [] },
+);
+const hasSuggestions = computed(
+  () => isLoadingSuggestions.value || suggestions.value.length > 0,
 );
 
 // Real Spotify metrics (audio-features endpoint is deprecated, so no
@@ -216,13 +209,19 @@ const stats = computed(() => {
   if (!t) return [];
   const index = currentTracks.value.findIndex((x) => x.id === t.id);
   const total = currentTracks.value.length || 1;
+  const popularity =
+    t.popularity === undefined
+      ? []
+      : [
+          {
+            label: 'Popularity',
+            icon: 'local_fire_department',
+            value: `${t.popularity}%`,
+            pct: t.popularity,
+          },
+        ];
   return [
-    {
-      label: 'Popularity',
-      icon: 'local_fire_department',
-      value: `${t.popularity}%`,
-      pct: t.popularity,
-    },
+    ...popularity,
     {
       label: 'Length',
       icon: 'schedule',
@@ -238,36 +237,371 @@ const stats = computed(() => {
   ];
 });
 
-// Prev/next within the current time range.
-const neighborIds = computed(() => {
-  const i = currentTracks.value.findIndex((x) => x.id === trackId.value);
-  return {
-    prevId: i > 0 ? (currentTracks.value[i - 1]?.id ?? null) : null,
-    nextId:
-      i >= 0 && i < currentTracks.value.length - 1
-        ? (currentTracks.value[i + 1]?.id ?? null)
-        : null,
-  };
-});
-const prevId = computed(() => neighborIds.value.prevId);
-const nextId = computed(() => neighborIds.value.nextId);
-
-const goTo = (id: string | null) => {
-  if (id) navigateTo(`/track/${id}`);
-};
-
-const onSeek = (event: MouseEvent) => {
-  if (!duration.value) return;
-  const el = event.currentTarget as HTMLElement;
-  const rect = el.getBoundingClientRect();
-  const ratio = (event.clientX - rect.left) / rect.width;
-  player.seek(ratio * duration.value);
-};
-
 onMounted(async () => {
-  // Ensure the current range is loaded so the track + neighbors resolve.
+  // Ensure the current range is loaded so the track resolves.
   if (currentTracks.value.length === 0) {
     await store.getTopTracks();
   }
 });
 </script>
+
+<style scoped lang="scss">
+@mixin large-icon {
+  @include icon-size('4xl');
+
+  @include from(md) {
+    @include icon-size('5xl');
+  }
+}
+
+.track-page {
+  position: relative;
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  overflow-x: hidden;
+  background-color: token(background);
+}
+
+.track-page__main {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  width: 100%;
+  flex: 1 1 0%;
+  flex-direction: column;
+  padding: var(--container-padding) var(--container-padding) space(32);
+
+  @include from(lg) {
+    padding: var(--section-margin) var(--section-margin) space(32);
+  }
+}
+
+.track-page__header {
+  margin-bottom: var(--section-margin);
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.back-link {
+  display: flex;
+  align-items: center;
+  gap: var(--unit);
+  color: token(on-surface-variant);
+  @include transition-colors;
+
+  &:hover {
+    color: token(primary);
+  }
+}
+
+.back-link__icon {
+  @include icon-size(xl);
+  @include transition(transform);
+
+  .back-link:hover & {
+    transform: translateX(-#{space(1)});
+  }
+}
+
+.back-link__label {
+  @include type(body-lg);
+}
+
+.quality-badge,
+.chip {
+  border-radius: var(--radius-full);
+  padding: space(1) space(3);
+  @include type(label-caps);
+  color: token(on-surface-variant);
+}
+
+.quality-badge {
+  border: 1px solid token(outline);
+}
+
+.chip {
+  background-color: token(surface-variant);
+}
+
+.track-grid {
+  display: grid;
+  flex: 1 1 0%;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: var(--card-gap);
+
+  @include from(lg) {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+}
+
+.track-grid__column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+
+  @include from(lg) {
+    &--art {
+      grid-column: span 5 / span 5;
+    }
+
+    &--info {
+      grid-column: span 7 / span 7;
+    }
+  }
+}
+
+// ── Artwork with a hover play overlay ─────────────────────────────────
+.cover {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  box-shadow: 0 20px 50px rgb(0 0 0 / 0.5);
+}
+
+.cover__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  @include transition(transform, 700ms);
+
+  .cover:hover & {
+    transform: scale(1.05);
+  }
+}
+
+.track-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--unit);
+  border-radius: var(--radius-xl);
+  padding: var(--container-padding);
+}
+
+.track-meta__title {
+  @include truncate;
+  @include type(display-lg-mobile);
+  color: token(on-surface);
+
+  @include from(lg) {
+    @include type(display-lg);
+  }
+}
+
+.track-meta__artist {
+  @include type(headline-md);
+  color: token(on-surface-variant);
+}
+
+.track-meta__chips {
+  margin-top: space(2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: space(3);
+}
+
+// ── Listen panel and stats ────────────────────────────────────────────
+.listen {
+  display: flex;
+  min-height: 300px;
+  flex: 1 1 0%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: space(4);
+  border-radius: var(--radius-xl);
+  padding: var(--container-padding);
+  text-align: center;
+}
+
+.listen__icon {
+  @include large-icon;
+  color: token(primary);
+}
+
+.listen__text {
+  max-width: 24rem;
+  @include type(body-lg);
+  color: token(on-surface-variant);
+}
+
+.spotify-link {
+  display: flex;
+  align-items: center;
+  gap: space(3);
+  border-radius: var(--radius-full);
+  background-color: token(primary-container);
+  padding: space(3) space(6);
+  font-weight: 700;
+  color: token(on-primary-container);
+  @include transition-colors;
+
+  &:hover {
+    background-color: token(primary-fixed-dim);
+    color: token(on-primary);
+  }
+}
+
+.spotify-link__logo {
+  width: space(5);
+  height: space(5);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: var(--gutter);
+
+  // One equal column per stat (Popularity isn't always available).
+  @include from(md) {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+  }
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: space(2);
+  border-radius: var(--radius-lg);
+  padding: var(--gutter);
+}
+
+.stat__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: token(on-surface-variant);
+}
+
+.stat__label {
+  @include type(body-sm);
+}
+
+.stat__icon {
+  @include icon-size(base);
+}
+
+.stat__value {
+  @include type(headline-md);
+  color: token(on-surface);
+}
+
+.stat__track {
+  margin-top: space(1);
+  height: space(2);
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background-color: token(surface-container-high);
+}
+
+.stat__bar {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background-color: token(primary);
+}
+
+// ── More from the artist ──────────────────────────────────────────────
+.more {
+  margin-top: var(--section-margin);
+}
+
+.more__title {
+  margin-bottom: space(4);
+  @include type(headline-md);
+  color: token(on-surface);
+}
+
+// As many ~18rem columns as fit; one column on phones. The negative margin
+// keeps covers aligned with the heading despite each row's hover padding.
+.more__list {
+  margin-inline: calc(-1 * #{space(2)});
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  gap: space(2) var(--gutter);
+}
+
+.more__skeleton {
+  height: space(18);
+  border-radius: var(--radius-lg);
+}
+
+.suggestion {
+  display: flex;
+  align-items: center;
+  gap: space(3);
+  border-radius: var(--radius-lg);
+  padding: space(2);
+  color: token(on-surface-variant);
+  @include transition-colors;
+
+  &:hover {
+    background-color: token(surface-container-high);
+    color: token(on-surface);
+  }
+}
+
+.suggestion__cover {
+  width: space(14);
+  height: space(14);
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+}
+
+.suggestion__text {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+}
+
+.suggestion__name {
+  @include truncate;
+  font-weight: 600;
+  color: token(on-surface);
+}
+
+.suggestion__album {
+  @include truncate;
+  @include type(body-sm);
+}
+
+.suggestion__icon {
+  @include icon-size(xl);
+}
+
+// ── Not found ─────────────────────────────────────────────────────────
+.not-found {
+  display: flex;
+  flex: 1 1 0%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.not-found__icon {
+  margin-bottom: space(4);
+  @include large-icon;
+  color: token(on-surface-variant);
+}
+
+.not-found__title {
+  margin-bottom: space(2);
+  @include type(headline-md);
+  color: token(on-surface);
+}
+
+.not-found__link {
+  color: token(primary);
+
+  &:hover {
+    text-decoration-line: underline;
+  }
+}
+</style>

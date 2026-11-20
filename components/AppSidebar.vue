@@ -1,42 +1,32 @@
 <template>
   <!-- Desktop sidebar; mobile uses AppTabBar -->
-  <aside
-    class="fixed left-0 top-0 z-40 hidden h-full w-[280px] flex-col gap-y-6 border-r border-surface-container-low bg-surface px-6 py-8 md:flex"
-  >
+  <aside class="sidebar">
     <!-- Brand -->
-    <NuxtLink to="/" class="mb-4 flex items-center gap-3 rounded-lg">
-      <span
-        class="flex h-12 w-12 items-center justify-center rounded-full bg-primary-container/20"
-      >
-        <span
-          aria-hidden="true"
-          class="material-symbols-outlined fill text-primary"
+    <NuxtLink to="/" class="sidebar__brand">
+      <span class="sidebar__logo">
+        <span aria-hidden="true" class="material-symbols-outlined fill"
           >graphic_eq</span
         >
       </span>
-      <span class="text-display-lg-mobile leading-none text-on-surface"
-        >Sporky</span
-      >
+      <span class="sidebar__name">Sporky</span>
     </NuxtLink>
 
     <!-- Navigation -->
-    <nav aria-label="Main" class="flex flex-grow flex-col gap-1">
+    <nav aria-label="Main" class="sidebar__nav">
       <NuxtLink
         v-for="item in NAV_ITEMS"
         :key="item.label"
         :to="item.to"
         :aria-current="isActiveNav(item, route.path) ? 'page' : undefined"
         :class="[
-          'flex min-h-11 items-center gap-4 rounded-lg px-4 py-3 transition-colors duration-200',
-          isActiveNav(item, route.path)
-            ? 'bg-surface-container-high font-bold text-on-surface'
-            : 'font-medium text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
+          'sidebar__link',
+          { 'is-active': isActiveNav(item, route.path) },
         ]"
       >
         <span
           aria-hidden="true"
-          class="material-symbols-outlined"
-          :class="isActiveNav(item, route.path) ? 'fill text-primary' : ''"
+          class="material-symbols-outlined sidebar__icon"
+          :class="{ fill: isActiveNav(item, route.path) }"
           >{{ item.icon }}</span
         >
         <span>{{ item.label }}</span>
@@ -44,10 +34,10 @@
     </nav>
 
     <!-- Footer -->
-    <div class="mt-auto border-t border-surface-container-low pt-6">
+    <div class="sidebar__footer">
       <button
         type="button"
-        class="flex min-h-11 w-full items-center gap-4 rounded-lg px-4 py-2 font-medium text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+        class="sidebar__link sidebar__link--button"
         @click="store.logout()"
       >
         <span aria-hidden="true" class="material-symbols-outlined">logout</span>
@@ -65,3 +55,100 @@ import { isActiveNav } from '~/utils/common';
 const store = useSporky();
 const route = useRoute();
 </script>
+
+<style scoped lang="scss">
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 40;
+  display: none;
+  width: var(--sidebar-width);
+  height: 100%;
+  flex-direction: column;
+  row-gap: space(6);
+  border-right-width: 1px;
+  border-color: token(surface-container-low);
+  background-color: token(surface);
+  padding: space(8) space(6);
+
+  @include from(md) {
+    display: flex;
+  }
+}
+
+.sidebar__brand {
+  margin-bottom: space(4);
+  display: flex;
+  align-items: center;
+  gap: space(3);
+  border-radius: var(--radius-lg);
+}
+
+.sidebar__logo {
+  display: flex;
+  width: space(12);
+  height: space(12);
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background-color: alpha(primary-container, 20%);
+
+  .material-symbols-outlined {
+    color: token(primary);
+  }
+}
+
+.sidebar__name {
+  @include type(display-lg-mobile);
+  line-height: 1;
+  color: token(on-surface);
+}
+
+.sidebar__nav {
+  display: flex;
+  flex-grow: 1;
+  flex-direction: column;
+  gap: space(1);
+}
+
+.sidebar__link {
+  display: flex;
+  min-height: space(11);
+  align-items: center;
+  gap: space(4);
+  border-radius: var(--radius-lg);
+  padding: space(3) space(4);
+  font-weight: 500;
+  color: token(on-surface-variant);
+  @include transition-colors(200ms);
+
+  &:hover {
+    background-color: token(surface-container);
+    color: token(on-surface);
+  }
+
+  &.is-active {
+    background-color: token(surface-container-high);
+    font-weight: 700;
+    color: token(on-surface);
+  }
+
+  &--button {
+    width: 100%;
+    padding-block: space(2);
+    @include transition-colors;
+  }
+}
+
+.is-active .sidebar__icon {
+  color: token(primary);
+}
+
+.sidebar__footer {
+  margin-top: auto;
+  border-top-width: 1px;
+  border-color: token(surface-container-low);
+  padding-top: space(6);
+}
+</style>

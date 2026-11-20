@@ -1,9 +1,17 @@
+// What $fetch / FetchError expose; everything is optional because the input is unknown.
+interface ErrorLike {
+  status?: number;
+  name?: string;
+  message?: string;
+}
+
 /**
  * Composable for handling API errors consistently
  */
 export const useErrorHandler = () => {
-  const getErrorMessage = (error: any): string => {
-    if (typeof error === 'string') return error;
+  const getErrorMessage = (input: unknown): string => {
+    if (typeof input === 'string') return input;
+    const error = (input ?? undefined) as ErrorLike | undefined;
 
     // HTTP status first: Spotify's raw error text isn't meant for end users.
     if (error?.status) {
@@ -32,18 +40,12 @@ export const useErrorHandler = () => {
     return 'An unexpected error occurred';
   };
 
-  const isUnauthorizedError = (error: any): boolean => {
-    return error?.status === 401;
-  };
-
-  const shouldRetry = (error: any): boolean => {
-    // Retry on network errors or 5xx server errors
-    return !error?.status || (error.status >= 500 && error.status < 600);
+  const isUnauthorizedError = (input: unknown): boolean => {
+    return (input as ErrorLike | null | undefined)?.status === 401;
   };
 
   return {
     getErrorMessage,
     isUnauthorizedError,
-    shouldRetry,
   };
 };

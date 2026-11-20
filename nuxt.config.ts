@@ -1,13 +1,23 @@
+import { fileURLToPath } from 'node:url';
+
+// Mixins, functions and breakpoints, available in every component's <style>.
+const SCSS_TOOLS = fileURLToPath(
+  new URL('./assets/scss/_tools.scss', import.meta.url),
+);
+
 export default defineNuxtConfig({
-  modules: ['@nuxtjs/tailwindcss', '@pinia/nuxt'],
+  modules: ['@pinia/nuxt'],
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
   // Fonts are self-hosted so no visitor IP is sent to Google.
-  css: [
-    '@fontsource-variable/inter',
-    'material-symbols/outlined.css',
-    '~/assets/css/main.css',
-  ],
+  css: ['@fontsource-variable/inter', '~/assets/scss/main.scss'],
+  vite: {
+    css: {
+      preprocessorOptions: {
+        scss: { additionalData: `@use "${SCSS_TOOLS}" as *;\n` },
+      },
+    },
+  },
   app: {
     head: {
       title: 'Sporky - Your Music Journey',

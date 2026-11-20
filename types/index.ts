@@ -20,8 +20,8 @@ export interface Track {
   album: string;
   cover: string;
   url: string;
-  preview: string;
-  popularity: number;
+  // Not sent to apps registered after Spotify's Nov 2024 API changes.
+  popularity?: number;
   duration: number;
 }
 
@@ -38,8 +38,7 @@ export interface TrackDetails {
   id: string;
   is_local: boolean;
   name: string;
-  popularity: number;
-  preview_url: string;
+  popularity?: number;
   track_number: number;
   type: ItemType;
   uri: string;
@@ -108,24 +107,6 @@ export enum ItemType {
   Track = 'track',
 }
 
-export interface CreatePlaylistResponse {
-  collaborative: any;
-  description: any;
-  external_urls: any;
-  followers: any;
-  href: any;
-  id: any;
-  images: any;
-  name: any;
-  owner: any;
-  primary_color: any;
-  _public: any;
-  snapshot_id: any;
-  tracks: any;
-  type: any;
-  uri: any;
-}
-
 export interface UserDTO {
   country: string;
   display_name: string;
@@ -146,23 +127,62 @@ export interface ExplicitContent {
   filter_locked: boolean;
 }
 
-export interface ExternalUrls {
-  spotify: string;
-}
-
 export interface Followers {
   href: string;
   total: number;
-}
-
-export interface Image {
-  url: string;
-  height: number;
-  width: number;
 }
 
 export interface OAuthTokens {
   access_token: string;
   refresh_token: string;
   expires_in: number;
+}
+
+// ── Playlists (backup feature) ──────────────────────────────────────
+// Spotify's 2026 playlist API renamed `tracks` → `items` (and `track` → `item`
+// inside each entry); both spellings are accepted so either response works.
+export interface PlaylistSummaryDTO {
+  id: string;
+  name: string;
+  description: string | null;
+  images: Image[] | null;
+  owner: { id: string; display_name: string | null };
+  tracks?: { total: number };
+  items?: { total: number };
+}
+
+export interface PlaylistEntryDTO {
+  track?: PlaylistTrackDTO | null;
+  item?: PlaylistTrackDTO | null;
+}
+
+// Podcast episodes can live in playlists too; only tracks are exported.
+export interface PlaylistTrackDTO {
+  type: 'track' | 'episode';
+  name: string;
+  artists?: { name: string }[];
+  album?: { name: string; images?: Image[] };
+}
+
+export interface Playlist {
+  id: string;
+  name: string;
+  description: string;
+  cover: string;
+  owner: string;
+  trackCount: number;
+}
+
+// The backup record: exactly what gets exported.
+export interface PlaylistSong {
+  title: string;
+  artist: string;
+  album: string;
+}
+
+// Shape every failed Spotify call is normalised to by `apiRequest`.
+export interface ApiError {
+  status?: number;
+  message: string;
+  isUnauthorized: boolean;
 }

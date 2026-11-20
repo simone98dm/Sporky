@@ -1,16 +1,13 @@
 <template>
-  <div class="mx-auto mt-6 flex max-w-6xl flex-col gap-12 md:mt-10">
+  <div class="home">
     <!-- Header: the greeting is context; the #1 card below is the page title -->
-    <header
-      class="flex flex-col justify-between gap-4 md:flex-row md:items-center"
-    >
-      <p class="text-body-lg text-on-surface-variant">
-        <span class="font-semibold text-on-surface">{{ greeting }}.</span>
+    <header class="home__header">
+      <p class="home__greeting">
+        <span class="home__greeting-name">{{ greeting }}.</span>
         {{ subtitle }}
       </p>
       <TimePeriodSelector
         :model-value="timeRange"
-        variant="short"
         :disabled="isPending"
         @update:model-value="handleTimeRangeChange"
       />
@@ -26,11 +23,11 @@
     />
 
     <!-- Loading -->
-    <div v-else-if="isPending" class="flex flex-col gap-12" aria-busy="true">
+    <div v-else-if="isPending" class="home__loading" aria-busy="true">
       <span class="sr-only" role="status">Loading your top tracks…</span>
-      <div class="skeleton h-[22rem] rounded-2xl md:h-80"></div>
-      <div class="flex flex-col gap-3">
-        <div v-for="n in 5" :key="n" class="skeleton h-16 rounded-lg"></div>
+      <div class="skeleton home__loading-hero"></div>
+      <div class="home__loading-rows">
+        <div v-for="n in 5" :key="n" class="skeleton home__loading-row"></div>
       </div>
     </div>
 
@@ -39,79 +36,49 @@
       <section
         :key="`${timeRange}-${featuredTrack.id}`"
         aria-labelledby="top-track-title"
-        class="relative isolate overflow-hidden rounded-2xl bg-surface-container-low"
+        class="hero"
       >
-        <TrackArtwork
+        <ArtworkBackdrop
           :src="featuredTrack.cover"
-          aria-hidden="true"
-          loading="eager"
+          intensity="strong"
+          eager
           fetchpriority="high"
-          class="absolute inset-0 -z-10 h-full w-full scale-125 opacity-60 blur-3xl saturate-150"
         />
-        <div
-          class="absolute inset-0 -z-10 bg-gradient-to-t from-background via-background/70 to-background/20"
-        ></div>
 
         <!-- Mobile: art + numeral side by side, text below.
              Desktop: art on the left spanning both rows. -->
-        <div
-          class="grid grid-cols-[7rem_1fr] items-end gap-x-5 gap-y-5 p-6 md:grid-cols-[14rem_1fr] md:gap-x-10 md:gap-y-2 md:p-10"
-        >
+        <div class="hero__grid">
           <NuxtLink
             :to="`/track/${featuredTrack.id}`"
-            class="reveal-art block md:row-span-2 md:self-end"
+            class="reveal-art hero__art"
             tabindex="-1"
             aria-hidden="true"
           >
             <TrackArtwork
               :src="featuredTrack.cover"
               loading="eager"
-              class="aspect-square w-full rounded-xl shadow-[0_24px_48px_-12px_rgba(0,0,0,0.6)]"
+              class="hero__cover"
             />
           </NuxtLink>
 
-          <p
-            class="reveal-numeral text-[5.5rem] font-extrabold leading-[0.8] tracking-[-0.04em] text-on-surface md:text-[7rem]"
-            aria-hidden="true"
-          >
-            #1
-          </p>
+          <p class="reveal-numeral hero__numeral" aria-hidden="true">#1</p>
 
-          <div class="reveal-text col-span-2 min-w-0 md:col-span-1">
-            <h1
-              id="top-track-title"
-              class="line-clamp-2 text-balance text-display-lg-mobile text-on-surface md:text-display-lg"
-            >
+          <div class="reveal-text hero__text">
+            <h1 id="top-track-title" class="hero__title">
               <span class="sr-only">Your number 1: </span
               >{{ featuredTrack.name }}
             </h1>
-            <p class="mt-1 truncate text-body-lg text-on-surface-variant">
+            <p class="hero__artist">
               {{ artistNames(featuredTrack) }}
             </p>
 
-            <div class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
-              <button
-                v-if="featuredTrack.preview"
-                type="button"
-                class="inline-flex h-12 items-center gap-2 rounded-full bg-primary-container pl-4 pr-6 font-bold text-on-primary-container transition-colors hover:bg-primary-fixed-dim hover:text-on-primary active:scale-[0.98]"
-                @click="player.toggle(featuredTrack)"
-              >
-                <span aria-hidden="true" class="material-symbols-outlined fill">
-                  {{ isPlaying(featuredTrack) ? 'pause' : 'play_arrow' }}
-                </span>
-                {{
-                  isPlaying(featuredTrack) ? 'Pause preview' : 'Play preview'
-                }}
-              </button>
-              <p v-else class="text-body-sm text-on-surface-variant">
-                No preview available for this track.
-              </p>
-              <NuxtLink
-                :to="`/track/${featuredTrack.id}`"
-                class="inline-flex min-h-11 items-center gap-1 font-semibold text-on-surface underline-offset-4 hover:underline"
-              >
+            <div class="hero__actions">
+              <NuxtLink :to="`/track/${featuredTrack.id}`" class="details-link">
                 Track details
-                <span aria-hidden="true" class="material-symbols-outlined">
+                <span
+                  aria-hidden="true"
+                  class="material-symbols-outlined details-link__icon"
+                >
                   arrow_forward
                 </span>
               </NuxtLink>
@@ -124,15 +91,11 @@
       <section
         v-if="highlights.length"
         aria-label="Highlights"
-        class="border-y border-outline-variant/40 py-8"
+        class="highlights"
       >
-        <ul class="grid gap-6 md:grid-cols-3 md:gap-10">
-          <li
-            v-for="h in highlights"
-            :key="h.key"
-            class="text-lg leading-snug text-on-surface-variant"
-          >
-            <strong class="font-bold text-on-surface">{{ h.lead }}</strong>
+        <ul class="highlights__list">
+          <li v-for="h in highlights" :key="h.key" class="highlights__item">
+            <strong class="highlights__lead">{{ h.lead }}</strong>
             {{ h.rest }}
           </li>
         </ul>
@@ -140,10 +103,10 @@
 
       <!-- #2…#N -->
       <section v-if="restTracks.length" aria-labelledby="rest-title">
-        <h2 id="rest-title" class="mb-4 text-headline-md text-on-surface">
+        <h2 id="rest-title" class="home__section-title">
           The rest of your top {{ trackCount }}
         </h2>
-        <ol start="2" class="flex flex-col">
+        <ol start="2" class="home__chart">
           <ChartRow
             v-for="(track, i) in restTracks"
             :key="track.id"
@@ -155,23 +118,14 @@
     </template>
 
     <!-- Empty -->
-    <section
+    <EmptyState
       v-else
-      class="flex flex-col items-center justify-center rounded-xl py-16 text-center layer-1"
+      icon="music_off"
+      :title="`No top tracks for ${rangeLabel}`"
     >
-      <span
-        aria-hidden="true"
-        class="material-symbols-outlined mb-4 text-5xl text-on-surface-variant"
-        >music_off</span
-      >
-      <h2 class="mb-2 text-headline-md text-on-surface">
-        No top tracks for {{ rangeLabel }}
-      </h2>
-      <p class="max-w-md text-body-sm text-on-surface-variant">
-        Spotify needs a bit more listening history for this period. Try a longer
-        time range.
-      </p>
-    </section>
+      Spotify needs a bit more listening history for this period. Try a longer
+      time range.
+    </EmptyState>
   </div>
 </template>
 
@@ -180,7 +134,6 @@ import { computed, onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import type { Track } from '~/types';
 import { useSporky } from '~/stores/sporky';
-import { useAudioPlayer } from '~/composables/useAudioPlayer';
 import { TIME_RANGE_OPTIONS } from '~/utils/const';
 
 type Range = (typeof TIME_RANGE_OPTIONS)[number]['value'];
@@ -198,8 +151,6 @@ const {
   topArtistCount,
   userProfile,
 } = storeToRefs(store);
-
-const player = useAudioPlayer();
 
 // Idle covers the server render, before onMounted starts the fetch, so the
 // empty state never flashes.
@@ -272,8 +223,6 @@ const subtitle = computed(() =>
 
 const artistNames = (track: Track) =>
   track.artists.map((a) => a.name).join(', ');
-const isPlaying = (track: Track) =>
-  player.isCurrent(track.id) && player.isPlaying.value;
 
 // Hour is read on the client only, so server and client render the same text.
 const hour = ref<number | null>(null);
@@ -300,9 +249,215 @@ onMounted(async () => {
 });
 </script>
 
-<style scoped>
-/* One authored moment: the #1 reveal. Elements are visible by default;
-   the global reduced-motion rule collapses these to an instant render. */
+<style scoped lang="scss">
+.home {
+  margin: space(6) auto 0;
+  display: flex;
+  max-width: 72rem;
+  flex-direction: column;
+  gap: space(12);
+
+  @include from(md) {
+    margin-top: space(10);
+  }
+}
+
+.home__header {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: space(4);
+
+  @include from(md) {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.home__greeting {
+  @include type(body-lg);
+  color: token(on-surface-variant);
+}
+
+.home__greeting-name {
+  font-weight: 600;
+  color: token(on-surface);
+}
+
+.home__loading {
+  display: flex;
+  flex-direction: column;
+  gap: space(12);
+}
+
+.home__loading-hero {
+  height: 22rem;
+  border-radius: var(--radius-lg);
+
+  @include from(md) {
+    height: space(80);
+  }
+}
+
+.home__loading-rows {
+  display: flex;
+  flex-direction: column;
+  gap: space(3);
+}
+
+.home__loading-row {
+  height: space(16);
+  border-radius: var(--radius-lg);
+}
+
+// ── #1 hero ───────────────────────────────────────────────────────────
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background-color: token(surface-container-low);
+}
+
+// Mobile: art + numeral side by side, text below.
+// Desktop: art on the left spanning both rows.
+.hero__grid {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  align-items: flex-end;
+  gap: space(5);
+  padding: space(6);
+
+  @include from(md) {
+    grid-template-columns: 14rem 1fr;
+    column-gap: space(10);
+    row-gap: space(2);
+    padding: space(10);
+  }
+}
+
+.hero__art {
+  display: block;
+
+  @include from(md) {
+    grid-row: span 2 / span 2;
+    align-self: flex-end;
+  }
+}
+
+.hero__cover {
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  border-radius: var(--radius-xl);
+  box-shadow: $shadow-art;
+}
+
+.hero__numeral {
+  font-size: 5.5rem;
+  font-weight: 800;
+  line-height: 0.8;
+  letter-spacing: -0.04em;
+  color: token(on-surface);
+
+  @include from(md) {
+    font-size: 7rem;
+  }
+}
+
+.hero__text {
+  grid-column: span 2 / span 2;
+  min-width: 0;
+
+  @include from(md) {
+    grid-column: span 1 / span 1;
+  }
+}
+
+.hero__title {
+  @include line-clamp(2);
+  text-wrap: balance;
+  @include type(display-lg-mobile);
+  color: token(on-surface);
+
+  @include from(md) {
+    @include type(display-lg);
+  }
+}
+
+.hero__artist {
+  margin-top: space(1);
+  @include truncate;
+  @include type(body-lg);
+  color: token(on-surface-variant);
+}
+
+.hero__actions {
+  margin-top: space(6);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: space(3) space(6);
+}
+
+.details-link {
+  display: inline-flex;
+  min-height: space(11);
+  align-items: center;
+  gap: space(1);
+  font-weight: 600;
+  color: token(on-surface);
+  text-underline-offset: 4px;
+
+  &:hover {
+    text-decoration-line: underline;
+  }
+}
+
+.details-link__icon {
+  @include icon-size(xl);
+}
+
+// ── Highlights and the rest of the chart ──────────────────────────────
+.highlights {
+  border-block-width: 1px;
+  border-color: alpha(outline-variant, 40%);
+  padding-block: space(8);
+}
+
+.highlights__list {
+  display: grid;
+  gap: space(6);
+
+  @include from(md) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: space(10);
+  }
+}
+
+.highlights__item {
+  @include size(lg);
+  line-height: 1.375;
+  color: token(on-surface-variant);
+}
+
+.highlights__lead {
+  font-weight: 700;
+  color: token(on-surface);
+}
+
+.home__section-title {
+  margin-bottom: space(4);
+  @include type(headline-md);
+  color: token(on-surface);
+}
+
+.home__chart {
+  display: flex;
+  flex-direction: column;
+}
+
+// One authored moment: the #1 reveal. Elements are visible by default;
+// the global reduced-motion rule collapses these to an instant render.
 .reveal-numeral,
 .reveal-art,
 .reveal-text {

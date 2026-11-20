@@ -1,26 +1,19 @@
 <template>
-  <div
-    role="group"
-    aria-label="Time range"
-    class="flex w-fit items-center rounded-full border border-white/10 bg-surface-container-low p-1"
-  >
+  <div role="group" aria-label="Time range" class="range-selector">
     <button
       v-for="option in TIME_RANGE_OPTIONS"
       :key="option.value"
       type="button"
       :aria-disabled="disabled || undefined"
       :aria-pressed="modelValue === option.value"
-      :aria-label="variant === 'short' ? option.label : undefined"
+      :aria-label="option.label"
       :class="[
-        'min-h-11 rounded-full px-4 text-body-sm font-semibold transition-colors aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
-        variant === 'label' ? 'px-6' : '',
-        modelValue === option.value
-          ? 'tab-active'
-          : 'text-on-surface-variant hover:text-on-surface',
+        'range-selector__option',
+        { 'is-active': modelValue === option.value },
       ]"
       @click="select(option.value)"
     >
-      {{ variant === 'short' ? option.short : option.label }}
+      {{ option.short }}
     </button>
   </div>
 </template>
@@ -32,12 +25,10 @@ type TimeRange = (typeof TIME_RANGE_OPTIONS)[number]['value'];
 
 interface TimePeriodSelectorProps {
   modelValue: TimeRange;
-  variant?: 'short' | 'label';
   disabled?: boolean;
 }
 
-const { variant = 'label', disabled = false } =
-  defineProps<TimePeriodSelectorProps>();
+const { disabled = false } = defineProps<TimePeriodSelectorProps>();
 
 interface TimePeriodSelectorEvents {
   'update:modelValue': [value: TimeRange];
@@ -51,3 +42,41 @@ const select = (value: TimeRange) => {
   if (!disabled) emit('update:modelValue', value);
 };
 </script>
+
+<style scoped lang="scss">
+// Pill-shaped switcher (DESIGN.md › Components › Tabs).
+.range-selector {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  border: 1px solid token(hairline);
+  border-radius: var(--radius-full);
+  background-color: token(surface-container-low);
+  padding: space(1);
+}
+
+.range-selector__option {
+  min-height: space(11);
+  border-radius: var(--radius-full);
+  padding-inline: space(4);
+  @include type(body-sm);
+  font-weight: 600;
+  color: token(on-surface-variant);
+  @include transition-colors;
+
+  &:hover {
+    color: token(on-surface);
+  }
+
+  &.is-active {
+    background-color: token(surface-container-high);
+    color: token(on-surface);
+  }
+
+  // aria-disabled keeps focus on the button while a range loads.
+  &[aria-disabled='true'] {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+</style>

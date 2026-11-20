@@ -1,111 +1,65 @@
 <template>
-  <li
-    :class="[
-      'group relative -mx-3 flex items-center rounded-lg px-3 transition-colors focus-within:bg-surface-container hover:bg-surface-container',
-      large ? 'gap-3 py-3 md:gap-6' : 'gap-3 py-2 md:gap-4',
-    ]"
-  >
+  <li :class="['chart-row', { 'chart-row--large': large }]">
     <!-- Rank (visual only; the <ol> and the link text carry it for AT) -->
-    <span
-      aria-hidden="true"
-      :class="[
-        'flex shrink-0 justify-end font-extrabold tabular-nums',
-        large
-          ? 'w-8 text-[2rem] leading-none tracking-[-0.04em] text-on-surface md:w-16 md:text-[3.5rem]'
-          : 'w-7 text-body-lg font-semibold text-on-surface-variant',
-      ]"
-    >
-      <EqualizerBars v-if="playing" playing />
-      <template v-else>{{ rank }}</template>
+    <span aria-hidden="true" class="chart-row__rank">
+      {{ rank }}
     </span>
 
     <!-- Movement vs the baseline range (visual; the link text carries it) -->
     <span
       v-if="movement !== undefined"
       aria-hidden="true"
-      class="flex w-9 shrink-0 items-center justify-center text-body-sm font-semibold tabular-nums md:w-12"
+      class="chart-row__movement"
     >
-      <span
-        v-if="movement === 'new'"
-        class="text-label-caps uppercase text-primary"
-        >New</span
-      >
+      <span v-if="movement === 'new'" class="movement-new">New</span>
       <span
         v-else-if="movement === 'fading'"
-        class="material-symbols-outlined text-base text-on-surface-variant"
+        class="material-symbols-outlined movement-icon movement--muted"
         title="Fading"
         >trending_down</span
       >
       <template v-else-if="typeof movement === 'number' && movement > 0">
-        <span class="material-symbols-outlined text-base text-on-surface"
+        <span class="material-symbols-outlined movement-icon movement--up"
           >arrow_upward</span
         >
-        <span class="text-on-surface">{{ movement }}</span>
+        <span class="movement--up">{{ movement }}</span>
       </template>
       <template v-else-if="typeof movement === 'number' && movement < 0">
-        <span
-          class="material-symbols-outlined text-base text-on-surface-variant"
+        <span class="material-symbols-outlined movement-icon movement--muted"
           >arrow_downward</span
         >
-        <span class="text-on-surface-variant">{{ -movement }}</span>
+        <span class="movement--muted">{{ -movement }}</span>
       </template>
       <span
         v-else-if="movement === 0"
-        class="material-symbols-outlined text-base text-outline"
+        class="material-symbols-outlined movement-icon movement--flat"
         >remove</span
       >
     </span>
 
-    <TrackArtwork
-      :src="track.cover"
-      :class="[
-        'shrink-0',
-        large ? 'h-16 w-16 rounded-lg md:h-24 md:w-24' : 'h-12 w-12 rounded-md',
-      ]"
-    />
+    <TrackArtwork :src="track.cover" class="chart-row__cover" />
 
     <!-- Title link; its ::after stretches over the whole row. The sr-only
          prefix stays before the title: after a truncated title it would sit
          off-screen and widen the page. -->
-    <div class="min-w-0 flex-1">
+    <div class="chart-row__text">
       <NuxtLink
         :to="`/track/${track.id}`"
         :title="track.name"
-        :class="[
-          'block font-semibold after:absolute after:inset-0 after:rounded-lg after:content-[\'\']',
-          large ? 'line-clamp-2 text-lg md:text-headline-md' : 'truncate',
-          playing ? 'text-primary' : 'text-on-surface',
-        ]"
+        class="chart-row__title"
       >
         <span class="sr-only"
           >Number {{ rank
           }}{{ movementLabel ? `, ${movementLabel}` : '' }}: </span
         >{{ track.name }}
       </NuxtLink>
-      <p class="truncate text-body-sm text-on-surface-variant">
+      <p class="chart-row__artist">
         {{ artistNames }}
       </p>
     </div>
 
-    <span
-      class="hidden text-body-sm text-on-surface-variant tabular-nums sm:block"
-    >
+    <span class="chart-row__duration">
       {{ formatTime(track.duration / 1000) }}
-    </span>
-
-    <button
-      v-if="track.preview"
-      type="button"
-      class="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-highest hover:text-on-surface"
-      :aria-label="`${playing ? 'Pause' : 'Play'} preview of ${track.name}`"
-      @click="player.toggle(track)"
-    >
-      <span aria-hidden="true" class="material-symbols-outlined fill">
-        {{ playing ? 'pause' : 'play_arrow' }}
-      </span>
-    </button>
-    <span v-else class="w-11 shrink-0">
-      <span class="sr-only">No preview available</span>
     </span>
   </li>
 </template>
@@ -113,7 +67,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { Movement, Track } from '~/types';
-import { useAudioPlayer } from '~/composables/useAudioPlayer';
 import { formatTime } from '~/utils/common';
 
 interface ChartRowProps {
@@ -129,11 +82,6 @@ interface ChartRowProps {
 
 const { track, rank, movement, large = false } = defineProps<ChartRowProps>();
 
-const player = useAudioPlayer();
-const playing = computed(
-  () => player.isCurrent(track.id) && player.isPlaying.value,
-);
-
 const artistNames = computed(() => track.artists.map((a) => a.name).join(', '));
 
 const movementLabel = computed(() => {
@@ -145,3 +93,167 @@ const movementLabel = computed(() => {
   return 'no change';
 });
 </script>
+
+<style scoped lang="scss">
+// One chart entry. The title link's ::after covers the row, so the whole row
+// is clickable.
+.chart-row {
+  position: relative;
+  margin-inline: calc(-1 * #{space(3)});
+  display: flex;
+  align-items: center;
+  gap: space(3);
+  border-radius: var(--radius-lg);
+  padding: space(2) space(3);
+  @include transition-colors;
+
+  &:hover,
+  &:focus-within {
+    background-color: token(surface-container);
+  }
+
+  @include from(md) {
+    gap: space(4);
+  }
+
+  &--large {
+    padding-block: space(3);
+
+    @include from(md) {
+      gap: space(6);
+    }
+  }
+}
+
+.chart-row__rank {
+  display: flex;
+  width: space(7);
+  flex-shrink: 0;
+  justify-content: flex-end;
+  @include type(body-lg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: token(on-surface-variant);
+
+  // Podium numerals: display-sized, tight.
+  .chart-row--large & {
+    width: space(8);
+    font-size: 2rem;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    font-weight: 800;
+    color: token(on-surface);
+
+    @include from(md) {
+      width: space(16);
+      font-size: 3.5rem;
+    }
+  }
+}
+
+.chart-row__movement {
+  display: flex;
+  width: space(9);
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  @include type(body-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+
+  @include from(md) {
+    width: space(12);
+  }
+}
+
+.movement-new {
+  @include type(label-caps);
+  text-transform: uppercase;
+  color: token(primary);
+}
+
+.movement-icon {
+  @include icon-size(base);
+}
+
+.movement--up {
+  color: token(on-surface);
+}
+
+.movement--muted {
+  color: token(on-surface-variant);
+}
+
+.movement--flat {
+  color: token(outline);
+}
+
+.chart-row__cover {
+  flex-shrink: 0;
+  width: space(12);
+  height: space(12);
+  border-radius: var(--radius-md);
+
+  .chart-row--large & {
+    width: space(16);
+    height: space(16);
+    border-radius: var(--radius-lg);
+
+    @include from(md) {
+      width: space(24);
+      height: space(24);
+    }
+  }
+}
+
+.chart-row__text {
+  min-width: 0;
+  flex: 1 1 0%;
+}
+
+.chart-row__title {
+  display: block;
+  font-weight: 600;
+  color: token(on-surface);
+  @include truncate;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-lg);
+  }
+
+  .chart-row--large & {
+    @include line-clamp(2);
+    // Matches the shipped look: `display: block` still wins over the clamp's
+    // -webkit-box, so long titles wrap instead of clamping. Drop this line to
+    // enable the 2-line clamp.
+    display: block;
+    text-overflow: clip;
+    white-space: normal;
+    @include size(lg);
+
+    @include from(md) {
+      @include type(headline-md);
+    }
+  }
+}
+
+.chart-row__artist {
+  @include truncate;
+  @include type(body-sm);
+  color: token(on-surface-variant);
+}
+
+.chart-row__duration {
+  display: none;
+  @include type(body-sm);
+  font-variant-numeric: tabular-nums;
+  color: token(on-surface-variant);
+
+  @include from(sm) {
+    display: block;
+  }
+}
+</style>

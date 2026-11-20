@@ -32,7 +32,7 @@ A modern web application that displays your top Spotify tracks with beautiful vi
 
 - **Framework**: [Nuxt 3](https://nuxt.com/) - The intuitive Vue framework
 - **Frontend**: [Vue 3](https://vuejs.org/) with Composition API
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
+- **Styling**: In-house SCSS: design tokens as CSS custom properties (`assets/scss`) and component-scoped styles
 - **State Management**: [Pinia](https://pinia.vuejs.org/) - The Vue Store
 - **Language**: TypeScript for type safety
 - **API**: Spotify Web API integration
@@ -152,7 +152,7 @@ Sporky is a **local-only** project: it is not deployed anywhere and runs only on
 | Spotify profile (`display_name`, `id`, `country`, `product`, `images`) | `GET /me` | Browser memory (Pinia) | Until the tab is closed/reloaded or logout |
 | Top tracks | `GET /me/top/tracks`, `GET /tracks` | Browser memory (Pinia) | Until the tab is closed/reloaded or logout |
 
-The Spotify refresh token is discarded. OAuth scopes are limited to `user-top-read user-read-private` (no email).
+The Spotify refresh token is discarded. OAuth scopes are limited to `user-top-read user-read-private playlist-read-private playlist-read-collaborative` (no email); the playlist scopes are read-only and power Playlist Backup.
 
 ### Cookies
 
@@ -167,7 +167,7 @@ No `localStorage`, `sessionStorage` or IndexedDB is used.
 
 ### Third parties
 
-- **Spotify AB** (Sweden): login, Web API, cover images and 30 s audio previews. Spotify acts as an independent controller; see the [Spotify Privacy Policy](https://www.spotify.com/legal/privacy-policy/).
+- **Spotify AB** (Sweden): login, Web API and cover images. Spotify acts as an independent controller; see the [Spotify Privacy Policy](https://www.spotify.com/legal/privacy-policy/).
 - **No** analytics (Google Analytics, GTM, etc.), tracking pixels, error tracking, or external CDNs. Fonts and icons are self-hosted (`@fontsource-variable/inter`, `material-symbols`).
 
 ### Revoking access
@@ -192,4 +192,3 @@ This project is licensed under the MIT License.
 
 - [Spotify Web API](https://developer.spotify.com/documentation/web-api/) for providing access to music data
 - [Nuxt.js](https://nuxt.com/) team for the amazing framework
-- [Tailwind CSS](https://tailwindcss.com/) for the utility-first styling approach

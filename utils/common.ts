@@ -19,3 +19,12 @@ export const isActiveNav = (
   item: { to: string; match: string | null },
   path: string,
 ): boolean => (item.match ? path.startsWith(item.match) : path === item.to);
+
+const countFormat = new Intl.NumberFormat('en');
+
+// 1 → "1 song", 1200 → "1,200 songs".
+export const pluralize = (
+  count: number,
+  singular: string,
+  plural = `${singular}s`,
+): string => `${countFormat.format(count)} ${count === 1 ? singular : plural}`;

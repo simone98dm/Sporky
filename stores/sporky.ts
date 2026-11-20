@@ -1,11 +1,9 @@
 import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
 import type { UserDTO, Track, Movement } from '~/types';
-
-type MoverKind = 'climber' | 'new' | 'drop' | 'fading';
 import { mapTrackToSong } from '~/utils/mapper';
 import { generateRandomString } from '~/utils/common';
-import { useSpotifyApi } from '~/composables/useSpotifyApi';
+import { useSpotifyApi, isApiError } from '~/composables/useSpotifyApi';
 import {
   COOKIE_NAME,
   OAUTH_STATE_COOKIE,
@@ -19,17 +17,13 @@ import {
   FADING_SOURCE,
 } from '~/utils/const';
 
-// Types for better type safety
 type TimeRange = 'short_term' | 'medium_term' | 'long_term';
+type MoverKind = 'climber' | 'new' | 'drop' | 'fading';
 type ApiState = 'idle' | 'loading' | 'success' | 'error';
 
 export const useSporky = defineStore('sporky-store', () => {
   // Composables
-  const {
-    getCurrentUser,
-    getTopTracks: fetchTopTracks,
-    getTracksByIds,
-  } = useSpotifyApi();
+  const { getCurrentUser, getTopTracks: fetchTopTracks } = useSpotifyApi();
 
   // Cookie reference (create once, reuse everywhere)
   const accessToken = useCookie(COOKIE_NAME);
@@ -51,9 +45,6 @@ export const useSporky = defineStore('sporky-store', () => {
   // Nothing requested yet (e.g. the server render before onMounted fetches).
   const isIdle = computed(() => apiState.value === 'idle');
   const currentTracks = computed(() => tracks.value[timeRange.value]);
-  const isAuthenticated = computed(() => {
-    return !!accessToken.value;
-  });
 
   // Business logic: Computed properties for music analytics
 
@@ -72,7 +63,7 @@ export const useSporky = defineStore('sporky-store', () => {
 
     const otherIds = other.map((t) => t.id);
     const otherTopTen = otherIds.slice(0, HOME_TRACK_COUNT);
-    const topRankInOther = otherIds.indexOf(current[0].id) + 1; // 0 = absent
+    const topRankInOther = otherIds.indexOf(current[0]?.id ?? '') + 1; // 0 = absent
     const newEntries = current.filter(
       (t) => !otherTopTen.includes(t.id),
     ).length;
@@ -197,13 +188,6 @@ export const useSporky = defineStore('sporky-store', () => {
     apiState.value = 'loading';
   };
 
-  const getAccessToken = () => {
-    if (!accessToken.value) {
-      throw new Error('No access token found');
-    }
-    return accessToken.value;
-  };
-
   // Get runtime config
   const {
     public: { clientId, redirectUri },
@@ -223,42 +207,23 @@ export const useSporky = defineStore('sporky-store', () => {
       const stateCookie = useCookie(OAUTH_STATE_COOKIE);
       stateCookie.value = state;
 
-      // Use window.open for better debugging, fallback to location.href
-      if (process.client) {
-        const popup = window.open(authorizeUrl, '_self');
-        if (!popup) {
-          // Fallback if popup blocked
-          window.location.href = authorizeUrl;
-        }
-      }
-    } catch (error) {
+      if (import.meta.client) window.location.assign(authorizeUrl);
+    } catch {
       setError('Failed to initiate login');
     }
   };
 
   const logout = () => {
-    try {
-      // Clear access token using the shared reference
-      accessToken.value = null;
-
-      // Clear oauth state
-      const stateCookie = useCookie(OAUTH_STATE_COOKIE);
-      stateCookie.value = null;
-
-      // Reset store state
-      tracks.value = {
-        short_term: [],
-        medium_term: [],
-        long_term: [],
-      };
-      userProfile.value = null;
-      clearError();
-
-      navigateTo('/login');
-    } catch (error) {
-      // Force navigation even if there's an error
-      navigateTo('/login');
-    }
+    accessToken.value = null;
+    useCookie(OAUTH_STATE_COOKIE).value = null;
+    tracks.value = {
+      short_term: [],
+      medium_term: [],
+      long_term: [],
+    };
+    userProfile.value = null;
+    clearError();
+    navigateTo('/login');
   };
 
   const getUserProfile = async (): Promise<UserDTO | null> => {
@@ -272,29 +237,11 @@ export const useSporky = defineStore('sporky-store', () => {
       const response = await getCurrentUser();
       userProfile.value = response;
       return response;
-    } catch (error: any) {
-      if (error.isUnauthorized) {
+    } catch (error: unknown) {
+      if (isApiError(error) && error.isUnauthorized) {
         logout();
       }
       return null;
-    }
-  };
-
-  // Best-effort fill of missing preview URLs via the /tracks endpoint.
-  const enrichPreviews = async (songs: Track[]): Promise<void> => {
-    const missing = songs.filter((s) => !s.preview && s.id);
-    if (missing.length === 0) return;
-
-    try {
-      const { tracks: full } = await getTracksByIds(missing.map((s) => s.id));
-      const previewById = new Map(
-        full.map((t) => [t.id, t.preview_url] as const),
-      );
-      missing.forEach((s) => {
-        s.preview = previewById.get(s.id) ?? s.preview;
-      });
-    } catch {
-      // Non-fatal: previews stay null, playback controls just hide.
     }
   };
 
@@ -304,10 +251,7 @@ export const useSporky = defineStore('sporky-store', () => {
     limit = TRACK_FETCH_LIMIT,
   ): Promise<Track[]> => {
     const response = await fetchTopTracks(range, offset, limit);
-    const songs = response.items.map((item) => mapTrackToSong(item));
-    // Enrich missing preview URLs (top-tracks endpoint often returns null).
-    await enrichPreviews(songs);
-    return songs;
+    return response.items.map((item) => mapTrackToSong(item));
   };
 
   // Background-load the ranges the user isn't viewing, for comparisons.
@@ -328,7 +272,6 @@ export const useSporky = defineStore('sporky-store', () => {
   };
 
   const getTopTracks = async (
-    type: string = 'tracks',
     offset: number = 0,
     limit: number = TRACK_FETCH_LIMIT,
   ): Promise<void> => {
@@ -346,11 +289,13 @@ export const useSporky = defineStore('sporky-store', () => {
         offset === 0 ? songs : [...tracks.value[range], ...songs];
 
       apiState.value = 'success';
-    } catch (error: any) {
-      setError(error.message || 'Failed to fetch top tracks');
+    } catch (error: unknown) {
+      setError(
+        (isApiError(error) && error.message) || 'Failed to fetch top tracks',
+      );
 
       // If unauthorized, redirect to login
-      if (error.isUnauthorized) {
+      if (isApiError(error) && error.isUnauthorized) {
         logout();
       }
     }
@@ -388,7 +333,6 @@ export const useSporky = defineStore('sporky-store', () => {
     movementSource,
     isMovementReady,
     biggestMovers,
-    isAuthenticated,
     comparison,
     topArtistData,
     topArtistName,
@@ -402,6 +346,5 @@ export const useSporky = defineStore('sporky-store', () => {
     prefetchOtherRanges,
     setTimeRange,
     getTrackById,
-    clearError,
   };
 });

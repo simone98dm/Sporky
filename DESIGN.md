@@ -148,6 +148,17 @@ A "Rounded" shape language is used to soften the technical nature of data visual
 - **Extra Large Radius:** 24px (rounded-xl) for major container sections and modal wrappers.
 - **Imagery:** Album art should always maintain a minimum 4px radius to avoid "sharp" corners that conflict with the overall UI.
 
+## Iconography
+
+Material Symbols Outlined, self-hosted as a subset (`scripts/icons.json`, regenerate with `yarn icons:subset`). Weight 400; `.fill` switches to the filled style for active and playback states. Size follows the text an icon sits beside, never the container:
+
+- **16px (`text-base`):** inline with `body-sm` text: chart movement, legends, stat labels, inline confirmations.
+- **20px (`text-xl`):** inside controls carrying 16px text: back links, text buttons, inputs, radio markers, small avatars.
+- **24px (default):** navigation, standalone icon buttons, the brand mark, primary playback pills.
+- **36px → 48px (`text-4xl md:text-5xl`):** empty states and illustrative panels; smaller on mobile so they don't outweigh the heading.
+
+Sizes are the same on mobile and desktop below the display tier; touch comfort comes from the 44px minimum hit area, not a larger glyph.
+
 ## Components
 
 - **Track Cards:** Utilize a vertical stack. Image at the top (16px radius), followed by title and artist. On hover, the background shifts to #282828 and a floating "Play" button (Primary Purple) appears.
